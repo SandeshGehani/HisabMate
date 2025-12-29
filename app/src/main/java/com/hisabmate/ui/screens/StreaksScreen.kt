@@ -13,7 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.EditSquare
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Lock
@@ -202,7 +202,7 @@ fun HeroStreakCard(currentStreak: Int) {
                     colors = ButtonDefaults.buttonColors(containerColor = Blue500),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.EditSquare, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Log Today's Entry", fontWeight = FontWeight.Bold)
                 }

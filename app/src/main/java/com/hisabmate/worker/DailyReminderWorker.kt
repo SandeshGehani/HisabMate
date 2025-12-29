@@ -20,22 +20,9 @@ class DailyReminderWorker(
         // Check for today's record
         val today = LocalDate.now()
         val startOfDay = DateUtils.getStartOfDay(today)
-        val endOfDay = DateUtils.getEndOfDay(today)
+        val endOfDay = startOfDay + (24 * 60 * 60 * 1000L) - 1 // End of day in millis
         
-        // This is a suspend call, but since we are in CoroutineWorker, we can call it directly if DAO is suspend, 
-        // OR collect from Flow. DAO getRecordForDate returns Flow<DailyRecord?>.
-        // We need a suspend equivalent or first().
-        // Let's rely on getRecordsForRange which returns Flow.
-        // Ideally DAO should have a suspend fun getRecord(date): DailyRecord?
-        
-        // We will collect the flow for one emission
-        kotlinx.coroutines.flow.firstOrNull { 
-             // We can just check usage. 
-             // But actually, we can check if it exists.
-             true
-        }
-        
-        // Since we don't have a direct suspend "getOne", let use records range
+        // Get records for today
         val records = kotlinx.coroutines.flow.firstOrNull(
              dao.getRecordsForRange(startOfDay, endOfDay)
         )

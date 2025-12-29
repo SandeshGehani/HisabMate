@@ -38,9 +38,9 @@ A simple, offline-first Android app for tracking daily meals, teas, and money co
 ### Download & Installation
 
 > [!IMPORTANT]
-> **[Download HisabMate APK (Direct Link)](https://github.com/SandeshGehani/HisabMate/raw/release-binaries/releases/HisabMate.apk)**
+> **[Download HisabMate APK v0.5 (Direct Link)](https://github.com/SandeshGehani/HisabMate/raw/release-binaries/releases/HisabMate_v0.5.apk)**
 > 
-> *Version: 1.0.0 (Debug)*
+> *Version: 0.5 (Signed Release)*
 
 1. **Download**: Click the link above to download the APK.
 2. **Install**: Enable "Install from Unknown Sources" on your Android device and open the APK.

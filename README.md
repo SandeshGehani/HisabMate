@@ -35,12 +35,17 @@ A simple, offline-first Android app for tracking daily meals, teas, and money co
 - Android SDK 34
 - Minimum Android version: 7.0 (API 24)
 
+### Download & Installation
+
+1. **Download APK**: You can download the latest APK from the [Releases section](https://github.com/SandeshGehani/HisabMate/releases) (if available) or build it manually.
+2. **Install**: Enable "Install from Unknown Sources" on your Android device and open the APK.
+
 ### Building the Project
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/hisabMate.git
-cd hisabMate
+git clone https://github.com/SandeshGehani/HisabMate.git
+cd HisabMate
 ```
 
 2. Open in Android Studio

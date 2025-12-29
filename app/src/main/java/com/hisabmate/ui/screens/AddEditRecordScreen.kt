@@ -309,7 +309,7 @@ fun InputSection(
     icon: ImageVector,
     iconBg: Color,
     iconTint: Color,
-    content: @ComposableColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),

@@ -12,14 +12,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,8 +32,6 @@ import androidx.compose.ui.unit.sp
 import com.hisabmate.data.local.entities.DailyRecord
 import com.hisabmate.ui.theme.*
 import com.hisabmate.viewmodel.CalendarViewModel
-import com.hisabmate.utils.DateUtils
-import java.time.LocalDate
 
 @Composable
 fun CalendarScreen(
@@ -65,7 +60,7 @@ fun CalendarScreen(
             CalendarGrid(records = recordsByDay, onDateClick = onNavigateToEntry)
         }
 
-        // Bottom Sheet / Floating Summary (Simplified for now - using real total counts from list)
+        // Bottom Sheet / Floating Summary
         val totalMeals = records.sumOf { it.mealsCount }
         val totalTeas = records.sumOf { it.teasCount }
         val totalSpent = records.sumOf { it.moneyAmount }
@@ -73,18 +68,46 @@ fun CalendarScreen(
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 72.dp) // Space for nav bar
+                .padding(bottom = 72.dp)
                 .padding(horizontal = 16.dp)
         ) {
             MonthlySummaryCard(
                 meals = totalMeals,
                 teas = totalTeas,
                 spent = totalSpent,
-                onAddRecord = onNavigateToEntry
+                onAddRecord = { onNavigateToEntry(System.currentTimeMillis()) }
             )
         }
+    }
+}
 
-        // Bottom Nav Bar
+@Composable
+fun CalendarHeader() {
+    val currentDate = java.time.LocalDate.now()
+    val monthName = currentDate.month.name.lowercase().replaceFirstChar { it.uppercase() }
+    val year = currentDate.year
+    
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .statusBarsPadding(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.ChevronLeft, contentDescription = "Prev", tint = MaterialTheme.colorScheme.onSurface)
+        }
+        
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "$monthName $year",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
             }
             Text(
                 text = "CURRENT MONTH",
@@ -119,14 +142,14 @@ fun DaysOfWeekHeader() {
 }
 
 @Composable
-fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: () -> Unit) {
+fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: (Long) -> Unit) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Empty cells for offset (assuming month starts on Tuesday for demo)
+        // Empty cells for offset
         items(2) {
             Box(modifier = Modifier.aspectRatio(0.8f))
         }
@@ -151,10 +174,8 @@ fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: () -> Unit) {
 fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
     
     val date = java.time.LocalDate.now()
-    val isToday = day == date.dayOfMonth // Simple check for current month demo
+    val isToday = day == date.dayOfMonth
     
-    // Warning logic: Example if user missed logging
-    // For now, no implicit warning.
     val isWarning = false 
     val hasData = record != null
     
@@ -196,7 +217,7 @@ fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             if (isToday) {
-                 // Nothing specific for today's content layout in this placeholder
+                 // Nothing specific for today's content layout
             } else if (hasData) {
                 if (record!!.mealsCount > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -283,34 +304,7 @@ fun SummaryItem(count: String, label: String, icon: ImageVector, iconTint: Color
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
             Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(12.dp))
             Spacer(modifier = Modifier.width(2.dp))
-            Text(text = label, style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-    }
-}
-
-@Composable
-fun BottomNavBar(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shadowElevation = 16.dp,
-        color = MaterialTheme.colorScheme.surface
-    ) {
-        Row(
-            modifier = Modifier.padding(vertical = 12.dp).navigationBarsPadding(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-             NavItem(icon = Icons.Default.CalendarToday, label = "Calendar", isSelected = true)
-             NavItem(icon = Icons.Default.BarChart, label = "Stats", isSelected = false)
-             NavItem(icon = Icons.Default.Settings, label = "Settings", isSelected = false)
-        }
-    }
-}
-
-@Composable
-fun NavItem(icon: ImageVector, label: String, isSelected: Boolean) {
-    val color = if (isSelected) Blue500 else MaterialTheme.colorScheme.onSurfaceVariant
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(icon, contentDescription = label, tint = color)
-        Text(text = label, style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = color, fontWeight = FontWeight.Bold)
     }
 }

@@ -25,9 +25,29 @@ class StreaksViewModel(private val repository: HisabMateRepository) : ViewModel(
     val earnedBadges = repository.getEarnedBadges()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
     
-    // Total entries (mocking for now as repo doesn't have countAll)
-    val totalEntries = MutableStateFlow(145) 
+    val totalEntries = repository.getTotalRecordsCount()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0)
     
-    // Consistency (mock)
-    val consistency = MutableStateFlow(92)
+    val consistency = currentMonthEntries.map { entries ->
+        val daysInMonthPassed = LocalDate.now().dayOfMonth
+        if (daysInMonthPassed > 0) (entries * 100) / daysInMonthPassed else 0
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0)
+
+    val last7DaysActivity: StateFlow<List<Boolean>> = flow {
+         val today = LocalDate.now()
+         val timestamps = (0..6).map { i ->
+             today.minusDays(i.toLong()).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+         }.reversed()
+         
+         repository.getRecordsForRange(timestamps.first(), timestamps.last()).collect { records ->
+             val recordDates = records.map {
+                 LocalDate.ofInstant(java.time.Instant.ofEpochMilli(it.date), java.time.ZoneId.systemDefault())
+             }.toSet()
+             
+             val activity = (0..6).map { i ->
+                 recordDates.contains(today.minusDays(i.toLong()))
+             }.reversed()
+             emit(activity)
+         }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), List(7) { false })
 }

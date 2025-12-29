@@ -50,6 +50,7 @@ fun StreaksScreen(
     val totalEntries by viewModel.totalEntries.collectAsState()
     val consistency by viewModel.consistency.collectAsState()
     val earnedBadges by viewModel.earnedBadges.collectAsState()
+    val last7DaysActivity by viewModel.last7DaysActivity.collectAsState()
 
     Box(
         modifier = Modifier
@@ -77,7 +78,7 @@ fun StreaksScreen(
                 )
 
                 // Recent Activity
-                RecentActivitySection()
+                RecentActivitySection(activity = last7DaysActivity)
 
                 // Statistics
                 StatisticsSection(
@@ -212,7 +213,7 @@ fun HeroStreakCard(currentStreak: Int) {
 }
 
 @Composable
-fun RecentActivitySection() {
+fun RecentActivitySection(activity: List<Boolean>) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
@@ -232,12 +233,13 @@ fun RecentActivitySection() {
                 modifier = Modifier.padding(16.dp).fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Mock Week Data
-                val days = listOf("M", "T", "W", "T", "F", "S", "S")
-                val status = listOf(true, true, true, false, true, true, false) // 4th is false (T), 7th is Today (S)
-                
+                 val today = java.time.LocalDate.now()
+                 val days = (0..6).map { i ->
+                     today.minusDays((6 - i).toLong()).dayOfWeek.name.take(1)
+                 }
+
                 days.forEachIndexed { index, day ->
-                     DayStatusItem(day = day, checked = status[index], isToday = index == 6)
+                     DayStatusItem(day = day, checked = activity.getOrElse(index) { false }, isToday = index == 6)
                 }
             }
         }
@@ -249,16 +251,7 @@ fun DayStatusItem(day: String, checked: Boolean, isToday: Boolean) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(day, style = MaterialTheme.typography.labelSmall, color = if(isToday) Blue500 else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
         
-        if (isToday) {
-             Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .border(2.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                 Text("Today", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else if (checked) {
+        if (checked) {
             Box(
                 modifier = Modifier
                     .size(32.dp)
@@ -266,6 +259,15 @@ fun DayStatusItem(day: String, checked: Boolean, isToday: Boolean) {
                 contentAlignment = Alignment.Center
             ) {
                  Icon(Icons.Default.Check, contentDescription = null, tint = Blue500, modifier = Modifier.size(16.dp))
+            }
+        } else if (isToday) {
+             Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                 Text("Today", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
              Box(

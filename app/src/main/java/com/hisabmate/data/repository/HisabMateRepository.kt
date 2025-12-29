@@ -21,6 +21,8 @@ class HisabMateRepository(
         dailyRecordDao.getRecordsForRange(start, end)
         
     suspend fun saveRecord(record: DailyRecord) = dailyRecordDao.insertOrUpdateRecord(record)
+
+    fun getTotalRecordsCount(): Flow<Int> = dailyRecordDao.getTotalRecordsCount()
     
     // Monthly Summary
     suspend fun saveSummary(summary: MonthlySummary) = monthlySummaryDao.insertOrUpdateSummary(summary)
@@ -35,6 +37,8 @@ class HisabMateRepository(
     suspend fun updateStreak(streak: Streak) = streakDao.updateStreak(streak)
 
     suspend fun refreshStreak(newDate: Long) {
+        if (newDate > System.currentTimeMillis()) return
+        
         val currentStreakObj = streakDao.getStreak().firstOrNull() ?: Streak()
         val lastDate = currentStreakObj.lastRecordedDate
         

@@ -177,28 +177,29 @@ fun SummaryScreen(
                             SocialItem(
                                 icon = Icons.Default.CheckCircle,
                                 label = "Report Bugs & Feedback",
-                                value = "sandeshgehani77@gmail.com",
-                                onClick = { uriHandler.openUri("mailto:sandeshgehani77@gmail.com") }
+                                value = "sandeshgehani18@gmail.com",
+                                onClick = { uriHandler.openUri("mailto:sandeshgehani18@gmail.com") }
                             )
                             Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                             
                             // Instagram
+                            // Instagram
                             SocialItem(
                                 icon = Icons.Default.Restaurant,
                                 label = "Instagram",
-                                @Suppress("HttpUrlsUsage")
                                 value = "sandeshgehanii",
                                 onClick = { uriHandler.openUri("https://www.instagram.com/sandeshgehanii/") }
                             )
+
                             Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                             // LinkedIn
-                            SocialItem(
-                                icon = Icons.Default.Share,
+                            SocialItem(icon = Icons.Default.Share,
                                 label = "LinkedIn",
-                                value = "Sandesh Gehani",
-                                onClick = { uriHandler.openUri("https://www.linkedin.com/in/sandesh-gehani-31b572368/") }
+                                subtitle = "Sandesh Gehani", // <--- Replaced 'value' with correct name
+                                onClick = { uriHandler.openUri(...) }
                             )
+
                             Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                             // GitHub
@@ -422,19 +423,37 @@ fun BreakdownCard(
 }
 
 @Composable
-fun SocialItem(icon: ImageVector, label: String, value: String, onClick: () -> Unit) {
+fun SocialItem(
+    icon: ImageVector,
+    label: String,
+    value: String, // Defining 'value' here fixes the error
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = Blue500, modifier = Modifier.size(20.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary
+        )
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
+

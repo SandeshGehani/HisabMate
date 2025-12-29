@@ -20,4 +20,7 @@ interface DailyRecordDao {
     
     @Query("DELETE FROM daily_records WHERE date = :date")
     suspend fun deleteRecord(date: Long)
+
+    @Query("SELECT COUNT(*) FROM daily_records")
+    fun getTotalRecordsCount(): Flow<Int>
 }

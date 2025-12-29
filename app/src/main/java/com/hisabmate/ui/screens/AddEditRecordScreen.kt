@@ -118,8 +118,8 @@ fun AddEditRecordScreen(
                 ) {
                     CountSelector(
                         selectedCount = if (isCustomMeal) -1 else mealCount,
-                        onCountSelected = { 
-                            mealCount = it
+                        onCountSelected = { count ->
+                            mealCount = if (mealCount == count) 0 else count
                             isCustomMeal = false
                         },
                         onCustomClick = { isCustomMeal = true }
@@ -144,13 +144,13 @@ fun AddEditRecordScreen(
                 ) {
                     CountSelector(
                         selectedCount = if (isCustomTea) -1 else teaCount,
-                        onCountSelected = { 
-                            teaCount = it 
+                        onCountSelected = { count ->
+                            teaCount = if (teaCount == count) 0 else count 
                             isCustomTea = false
                         },
                         onCustomClick = { isCustomTea = true }
                     )
-                     if (isCustomTea) {
+                    if (isCustomTea) {
                         CustomInput(
                             value = if (teaCount > 5) teaCount.toString() else (if(teaCount > 0) teaCount.toString() else ""),
                             onValueChange = { teaCount = it.toIntOrNull() ?: 0 },
@@ -170,8 +170,9 @@ fun AddEditRecordScreen(
                 ) {
                     MoneySelector(
                         selectedAmount = if (isCustomMoney) -1 else contributionAmount.toIntOrNull() ?: 0,
-                        onAmountSelected = { 
-                            contributionAmount = it.toString()
+                        onAmountSelected = { amount ->
+                            val current = contributionAmount.toIntOrNull() ?: 0
+                            contributionAmount = if (current == amount) "" else amount.toString()
                             isCustomMoney = false
                         },
                         onCustomClick = { isCustomMoney = true }
@@ -186,6 +187,26 @@ fun AddEditRecordScreen(
                     }
                 }
                 
+                val isFutureDate = selectedDate > System.currentTimeMillis()
+
+                if (isFutureDate) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                "Cannot add/edit records for a future date.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+
                 Text(
                     text = "Keep your hisab up to date daily.",
                     style = MaterialTheme.typography.bodySmall,
@@ -197,8 +218,10 @@ fun AddEditRecordScreen(
         }
         
         // Bottom Save Button
+        val isFutureDate = selectedDate > System.currentTimeMillis()
         SaveButtonContainer(
             modifier = Modifier.align(Alignment.BottomCenter),
+            enabled = !isFutureDate,
             onSave = {
                 viewModel.saveRecord(
                     date = selectedDate,
@@ -526,6 +549,7 @@ fun CustomInput(
 @Composable
 fun SaveButtonContainer(
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onSave: () -> Unit
 ) {
     Box(
@@ -542,14 +566,18 @@ fun SaveButtonContainer(
             )
             .padding(16.dp)
             .navigationBarsPadding()
+            .then(if (!enabled) Modifier.graphicsLayer(alpha = 0.5f) else Modifier)
     ) {
          Button(
             onClick = onSave,
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Blue500,
-                contentColor = Color.White
+                contentColor = Color.White,
+                disabledContainerColor = Color.Gray,
+                disabledContentColor = Color.White.copy(alpha = 0.6f)
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
         ) {

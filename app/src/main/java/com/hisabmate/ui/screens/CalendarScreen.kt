@@ -180,9 +180,9 @@ fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: (Long) -> Unit) {
 
 @Composable
 fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
-    
     val date = LocalDate.now()
     val isToday = day == date.dayOfMonth
+    val isFuture = day > date.dayOfMonth
     
     val hasData = record != null
     
@@ -206,7 +206,10 @@ fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
             .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
             .border(1.dp, borderColor, RoundedCornerShape(12.dp))
-            .clickable { onClick() }
+            .then(
+                if (isFuture) Modifier.graphicsLayer(alpha = 0.4f)
+                else Modifier.clickable { onClick() }
+            )
             .padding(6.dp)
     ) {
         Text(

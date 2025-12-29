@@ -274,6 +274,10 @@ fun SummaryCard(
 
 @Composable
 fun ContributionCard(amount: Double) {
+    val monthlyGoal = 10000.0 // Default target for now
+    val progress = (amount / monthlyGoal).coerceIn(0.0, 1.0).toFloat()
+    val percentage = (progress * 100).toInt()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -326,7 +330,7 @@ fun ContributionCard(amount: Double) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress Bar (Mocked to 65% for now, logic later)
+            // Progress Bar (Dynamic)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -336,7 +340,7 @@ fun ContributionCard(amount: Double) {
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.65f)
+                        .fillMaxWidth(progress)
                         .fillMaxHeight()
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
@@ -346,7 +350,7 @@ fun ContributionCard(amount: Double) {
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "65% of monthly budget utilized",
+                text = "$percentage% of monthly goal reached (PKR 10k)",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

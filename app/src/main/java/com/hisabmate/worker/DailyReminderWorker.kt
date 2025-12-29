@@ -4,9 +4,10 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.hisabmate.data.local.HisabMateDatabase
-import com.hisabmate.utils.DateUtils
 import com.hisabmate.utils.NotificationHelper
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
+import java.time.ZoneId
 
 class DailyReminderWorker(
     appContext: Context,
@@ -17,17 +18,15 @@ class DailyReminderWorker(
         val database = HisabMateDatabase.getDatabase(applicationContext)
         val dao = database.dailyRecordDao()
         
-        // Check for today's record
+        // Get today's date as timestamp
         val today = LocalDate.now()
-        val startOfDay = DateUtils.getStartOfDay(today)
-        val endOfDay = startOfDay + (24 * 60 * 60 * 1000L) - 1 // End of day in millis
+        val startOfDay = today.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val endOfDay = startOfDay + (24 * 60 * 60 * 1000L) - 1
         
-        // Get records for today
-        val records = kotlinx.coroutines.flow.firstOrNull(
-             dao.getRecordsForRange(startOfDay, endOfDay)
-        )
+        // Get records for today - use .first() to get the value from Flow
+        val records = dao.getRecordsForRange(startOfDay, endOfDay).first()
         
-        val hasRecord = !records.isNullOrEmpty()
+        val hasRecord = records.isNotEmpty()
         
         if (!hasRecord) {
             NotificationHelper.showNotification(applicationContext)

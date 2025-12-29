@@ -24,12 +24,14 @@ A simple, offline-first Android app for tracking daily meals, teas, and money co
 
 ## 📸 Screenshots
 
-![WhatsApp Image 2025-12-29 at 4 10 15 PM](https://github.com/user-attachments/assets/51350836-87b2-4188-aa9c-c38136c22c12)
-![WhatsApp Image 2025-12-29 at 4 10 14 PM](https://github.com/user-attachments/assets/82ef62ad-6c21-4c43-ac34-6cb27f5a0353)
-![WhatsApp Image 2025-12-29 at 4 10 14 PM (2)](https://github.com/user-attachments/assets/11958474-38dd-4c1d-b7eb-66751ef939b5)
-![WhatsApp Image 2025-12-29 at 4 10 14 PM (1)](https://github.com/user-attachments/assets/50a06d12-cbad-40cb-9607-e5103f4404de)
-![WhatsApp Image 2025-12-29 at 4 10 13 PM (1)](https://github.com/user-attachments/assets/a0a2e62b-0e0c-4366-94c6-c66546bbac95)
-![WhatsApp Image 2025-12-29 at 4 10 13 PM](https://github.com/user-attachments/assets/91f370ae-f813-41c9-99a9-b1d0e29a9e29)
+<p float="left">
+  <img src="https://github.com/user-attachments/assets/51350836-87b2-4188-aa9c-c38136c22c12" width="350" />
+  <img src="https://github.com/user-attachments/assets/82ef62ad-6c21-4c43-ac34-6cb27f5a0353" width="350" />
+  <img src="https://github.com/user-attachments/assets/11958474-38dd-4c1d-b7eb-66751ef939b5" width="350" />
+  <img src="https://github.com/user-attachments/assets/50a06d12-cbad-40cb-9607-e5103f4404de" width="350" />
+  <img src="https://github.com/user-attachments/assets/a0a2e62b-0e0c-4366-94c6-c66546bbac95" width="350" />
+  <img src="https://github.com/user-attachments/assets/91f370ae-f813-41c9-99a9-b1d0e29a9e29" width="350" />
+</p>
 
 
 

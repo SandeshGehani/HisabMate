@@ -194,11 +194,14 @@ fun SummaryScreen(
                             Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
                             // LinkedIn
-                            SocialItem(icon = Icons.Default.Share,
+                            // LinkedIn
+                            SocialItem(
+                                icon = Icons.Default.Share,
                                 label = "LinkedIn",
-                                subtitle = "Sandesh Gehani", // <--- Replaced 'value' with correct name
-                                onClick = { uriHandler.openUri(...) }
+                                value = "Sandesh Gehani",
+                                onClick = { uriHandler.openUri("https://www.linkedin.com/in/sandeshgehani/") }
                             )
+
 
                             Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
@@ -236,17 +239,13 @@ fun SummaryScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                Column {
-                    Text("Final Payable Amount", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(verticalAlignment = Alignment.Bottom) {
-                         Text(
-                             text = "PKR ${finalAmount.toInt()}",
-                             style = MaterialTheme.typography.headlineMedium,
-                             fontWeight = FontWeight.Bold,
-                             color = MaterialTheme.colorScheme.onBackground
-                         )
-                         Text(".00", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
-                    }
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "PKR ${finalAmount.toInt()}",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
             

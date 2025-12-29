@@ -1,5 +1,6 @@
 package com.hisabmate.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -39,12 +40,15 @@ import java.time.format.DateTimeFormatter
 fun HomeScreen(
     viewModel: HomeViewModel,
     onNavigateToEntry: () -> Unit = {},
-    onNavigateToCalendar: () -> Unit = {}
+    onNavigateToCalendar: () -> Unit = {},
+    onNavigateToStreaks: () -> Unit = {},
+    onNavigateToSummary: () -> Unit = {}
 ) {
     val totalMeals by viewModel.totalMeals.collectAsState()
     val totalTeas by viewModel.totalTeas.collectAsState()
     val totalMoney by viewModel.totalContribution.collectAsState()
     val todaysRecord by viewModel.todaysRecord.collectAsState()
+    val streakObj by viewModel.streak.collectAsState()
 
     val currentMonthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("MMM dd"))
@@ -57,14 +61,21 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 100.dp) // Space for bottom actions
+                .padding(bottom = 120.dp) // Space for bottom actions
                 .verticalScroll(rememberScrollState())
         ) {
             // Header
-            HeaderSection(title = currentMonthYear)
+            HeaderSection(
+                title = currentMonthYear,
+                onMenuClick = onNavigateToStreaks,
+                onSettingsClick = onNavigateToSummary
+            )
 
             // Streaks
-            StreaksSection()
+            StreaksSection(
+                streakCount = streakObj?.currentStreak ?: 0,
+                onStreakClick = onNavigateToStreaks
+            )
 
             // Main Content
             Column(
@@ -82,22 +93,22 @@ fun HomeScreen(
                         icon = Icons.Default.Restaurant,
                         count = totalMeals.toString(),
                         label = "Total Meals",
-                        iconBgColor = Color(0xFFDBEAFE), // blue-100
-                        iconTint = Color(0xFF2563EB) // blue-600
+                        iconBgColor = Color(0xFFDBEAFE),
+                        iconTint = Color(0xFF2563EB)
                     )
                     SummaryCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.LocalCafe,
                         count = totalTeas.toString(),
                         label = "Total Teas",
-                        iconBgColor = Color(0xFFFEF3C7), // amber-100
-                        iconTint = Color(0xFFD97706) // amber-600
+                        iconBgColor = Color(0xFFFEF3C7),
+                        iconTint = Color(0xFFD97706)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Contribution Card (Large)
+                // Contribution Card
                 ContributionCard(amount = totalMoney)
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -113,7 +124,7 @@ fun HomeScreen(
             }
         }
 
-        // Bottom Actions (Floating)
+        // Bottom Actions
         BottomActionSection(
             modifier = Modifier.align(Alignment.BottomCenter),
             onAddClick = onNavigateToEntry,
@@ -123,7 +134,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun HeaderSection(title: String) {
+fun HeaderSection(title: String, onMenuClick: () -> Unit, onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -132,7 +143,7 @@ fun HeaderSection(title: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        IconButton(onClick = { /* TODO */ }, modifier = Modifier.size(40.dp)) {
+        IconButton(onClick = onMenuClick, modifier = Modifier.size(40.dp)) {
             Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onBackground)
         }
         
@@ -143,14 +154,14 @@ fun HeaderSection(title: String) {
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        IconButton(onClick = { /* TODO */ }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
+        IconButton(onClick = onSettingsClick, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.Settings, contentDescription = "Summary", tint = MaterialTheme.colorScheme.onBackground)
         }
     }
 }
 
 @Composable
-fun StreaksSection() {
+fun StreaksSection(streakCount: Int, onStreakClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -158,13 +169,14 @@ fun StreaksSection() {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Streak Badge (Static for now)
+        // Streak Badge
         BadgeItem(
             icon = Icons.Default.LocalFireDepartment,
-            text = "12 Day Streak",
+            text = "$streakCount Day Streak",
             bgColor = SoftOrangeLight,
             contentColor = Color(0xFFC2410C), // orange-700
-            borderColor = Color(0xFFFED7AA) // orange-200
+            borderColor = Color(0xFFFED7AA), // orange-200
+            onClick = onStreakClick
         )
         
         Spacer(modifier = Modifier.width(12.dp))
@@ -172,10 +184,11 @@ fun StreaksSection() {
         // Gold Pending Badge
         BadgeItem(
             icon = Icons.Default.MilitaryTech,
-            text = "Gold Pending",
+            text = "View Badges",
             bgColor = SoftIndigoLight, 
             contentColor = Color(0xFF4338CA), // indigo-700
-            borderColor = Color(0xFFE0E7FF) // indigo-100
+            borderColor = Color(0xFFE0E7FF), // indigo-100
+            onClick = onStreakClick
         )
     }
 }
@@ -186,7 +199,8 @@ fun BadgeItem(
     text: String,
     bgColor: Color,
     contentColor: Color,
-    borderColor: Color
+    borderColor: Color,
+    onClick: () -> Unit = {}
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -194,6 +208,7 @@ fun BadgeItem(
             .clip(CircleShape)
             .background(bgColor)
             .border(1.dp, borderColor, CircleShape)
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Icon(
@@ -279,7 +294,7 @@ fun ContributionCard(amount: Double) {
                     )
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            text = "₹",
+                            text = "PKR",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,

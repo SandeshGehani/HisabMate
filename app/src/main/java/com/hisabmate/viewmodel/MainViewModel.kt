@@ -21,11 +21,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var isLoading by mutableStateOf(true)
         private set
 
+    var isDarkMode by mutableStateOf(false)
+
     init {
         onboardingManager.isOnboardingCompleted.onEach { completed ->
             startDestination = if (completed) Screen.Home.route else Screen.Onboarding.route
             isLoading = false
         }.launchIn(viewModelScope)
+    }
+
+    fun toggleTheme() {
+        isDarkMode = !isDarkMode
     }
 
     fun completeOnboarding() {

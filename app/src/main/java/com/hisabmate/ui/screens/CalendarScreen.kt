@@ -32,10 +32,13 @@ import androidx.compose.ui.unit.sp
 import com.hisabmate.data.local.entities.DailyRecord
 import com.hisabmate.ui.theme.*
 import com.hisabmate.viewmodel.CalendarViewModel
+import java.time.LocalDate
+import java.time.YearMonth
 
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel,
+    onBack: () -> Unit = {},
     onNavigateToEntry: (Long) -> Unit = {}
 ) {
     val records by viewModel.monthlyRecords.collectAsState(initial = emptyList())
@@ -53,7 +56,7 @@ fun CalendarScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            CalendarHeader()
+            CalendarHeader(onBack = onBack)
             
             DaysOfWeekHeader()
 
@@ -82,8 +85,8 @@ fun CalendarScreen(
 }
 
 @Composable
-fun CalendarHeader() {
-    val currentDate = java.time.LocalDate.now()
+fun CalendarHeader(onBack: () -> Unit) {
+    val currentDate = LocalDate.now()
     val monthName = currentDate.month.name.lowercase().replaceFirstChar { it.uppercase() }
     val year = currentDate.year
     
@@ -95,8 +98,8 @@ fun CalendarHeader() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.ChevronLeft, contentDescription = "Prev", tint = MaterialTheme.colorScheme.onSurface)
+        IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.ChevronLeft, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
         }
         
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -143,6 +146,11 @@ fun DaysOfWeekHeader() {
 
 @Composable
 fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: (Long) -> Unit) {
+    val currentMonth = YearMonth.now()
+    val daysInMonth = currentMonth.lengthOfMonth()
+    val firstOfMonth = currentMonth.atDay(1)
+    val dayOfWeekOffset = firstOfMonth.dayOfWeek.value % 7 // 0 for Sunday
+    
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -150,15 +158,15 @@ fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: (Long) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Empty cells for offset
-        items(2) {
+        items(dayOfWeekOffset) {
             Box(modifier = Modifier.aspectRatio(0.8f))
         }
 
-        // Days 1-31
-        items(31) { index ->
+        // Days 1-daysInMonth
+        items(daysInMonth) { index ->
             val day = index + 1
             val record = records[day]
-            val date = java.time.LocalDate.now().withDayOfMonth(day)
+            val date = LocalDate.now().withDayOfMonth(day)
             val dateMillis = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
             DayCell(day = day, record = record, onClick = { onDateClick(dateMillis) })
         }
@@ -173,27 +181,24 @@ fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: (Long) -> Unit) {
 @Composable
 fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
     
-    val date = java.time.LocalDate.now()
+    val date = LocalDate.now()
     val isToday = day == date.dayOfMonth
     
-    val isWarning = false 
     val hasData = record != null
     
     val bgColor = when {
         isToday -> Blue500
-        isWarning -> Red50 
-        hasData -> Blue500.copy(alpha = 0.1f)
+        hasData -> Blue500.copy(alpha = 0.15f)
         else -> MaterialTheme.colorScheme.surface
     }
     
     val borderColor = when {
         isToday -> Blue500
-        isWarning -> Red500.copy(alpha = 0.3f)
-        hasData -> Blue500.copy(alpha = 0.3f)
+        hasData -> Blue500.copy(alpha = 0.4f)
         else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     }
 
-    val textColor = if (isToday) Color.White else if (isWarning) Red500 else MaterialTheme.colorScheme.onSurface
+    val textColor = if (isToday) Color.White else MaterialTheme.colorScheme.onSurface
 
     Box(
         modifier = Modifier
@@ -216,9 +221,7 @@ fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
             modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            if (isToday) {
-                 // Nothing specific for today's content layout
-            } else if (hasData) {
+            if (!isToday && hasData) {
                 if (record!!.mealsCount > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Restaurant, contentDescription = null, tint = Orange500, modifier = Modifier.size(10.dp))
@@ -237,7 +240,12 @@ fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
                          Text(record.moneyAmount.toInt().toString(), fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            } 
+            } else if (isToday && hasData) {
+                 // Simplified indicators for today when selected
+                 if (record!!.mealsCount > 0 || record.teasCount > 0 || record.moneyAmount > 0) {
+                     Box(modifier = Modifier.size(4.dp).background(Color.White, CircleShape).align(Alignment.CenterHorizontally))
+                 }
+            }
         }
     }
 }
@@ -262,7 +270,7 @@ fun MonthlySummaryCard(meals: Int, teas: Int, spent: Double, onAddRecord: () -> 
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                  )
                  Text(
-                     text = "View Details",
+                     text = "PKR ${spent.toInt()}",
                      style = MaterialTheme.typography.labelSmall,
                      fontWeight = FontWeight.Bold,
                      color = Blue500
@@ -285,7 +293,7 @@ fun MonthlySummaryCard(meals: Int, teas: Int, spent: Double, onAddRecord: () -> 
             ) {
                 Icon(Icons.Default.AddCircle, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Record for Today", fontWeight = FontWeight.Bold)
+                Text("Add Today's Record", fontWeight = FontWeight.Bold)
             }
         }
     }

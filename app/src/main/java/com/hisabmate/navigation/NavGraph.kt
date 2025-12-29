@@ -18,6 +18,7 @@ import com.hisabmate.viewmodel.HomeViewModel
 fun HisabMateNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Onboarding.route,
+    onUpdateTheme: () -> Unit = {},
     onFinishOnboarding: () -> Unit = {},
     viewModelFactory: HisabMateViewModelFactory
 ) {
@@ -29,9 +30,6 @@ fun HisabMateNavHost(
             OnboardingScreen(
                 onFinishOnboarding = {
                     onFinishOnboarding()
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
                 }
             )
         }
@@ -43,7 +41,9 @@ fun HisabMateNavHost(
                     val today = System.currentTimeMillis()
                     navController.navigate(Screen.AddEditRecord.createRoute(today)) 
                 },
-                onNavigateToCalendar = { navController.navigate(Screen.Calendar.route) }
+                onNavigateToCalendar = { navController.navigate(Screen.Calendar.route) },
+                onNavigateToStreaks = { navController.navigate(Screen.Streaks.route) },
+                onNavigateToSummary = { navController.navigate(Screen.Summary.route) }
             )
         }
         composable(
@@ -55,13 +55,19 @@ fun HisabMateNavHost(
             AddEditRecordScreen(
                 viewModel = viewModel,
                 selectedDate = dateMillis,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onNavigateToCalendar = { 
+                    navController.navigate(Screen.Calendar.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                    }
+                }
             )
         }
         composable(Screen.Calendar.route) {
             val viewModel: CalendarViewModel = viewModel(factory = viewModelFactory)
             CalendarScreen(
                 viewModel = viewModel,
+                onBack = { navController.popBackStack() },
                 onNavigateToEntry = { dateMillis ->
                     navController.navigate(Screen.AddEditRecord.createRoute(dateMillis))
                 }
@@ -71,7 +77,8 @@ fun HisabMateNavHost(
             val viewModel: com.hisabmate.viewmodel.SummaryViewModel = viewModel(factory = viewModelFactory)
             SummaryScreen(
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onUpdateTheme = onUpdateTheme
             )
         }
         composable(Screen.Streaks.route) {

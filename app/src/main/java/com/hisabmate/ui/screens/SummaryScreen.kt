@@ -33,7 +33,8 @@ import com.hisabmate.viewmodel.SummaryViewModel
 @Composable
 fun SummaryScreen(
     viewModel: SummaryViewModel,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onUpdateTheme: () -> Unit = {}
 ) {
     val mealRate by viewModel.mealRate.collectAsState()
     val teaRate by viewModel.teaRate.collectAsState()
@@ -68,6 +69,30 @@ fun SummaryScreen(
                 // Status Card
                 StatusCard()
 
+                // Theme Settings
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "App Settings",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp).fillMaxWidth().clickable { onUpdateTheme() },
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Dark Mode", fontWeight = FontWeight.Medium)
+                            Switch(checked = MaterialTheme.colorScheme.surface == Color(0xFF1E293B) || MaterialTheme.colorScheme.surface == Color.Black, onCheckedChange = { onUpdateTheme() })
+                        }
+                    }
+                }
+
                 // Set Rates
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
@@ -78,13 +103,13 @@ fun SummaryScreen(
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         RateInput(
-                            label = "Rate per Meal (₹)",
+                            label = "Rate per Meal (PKR)",
                             value = mealRate.toInt().toString(),
                             onValueChange = { viewModel.updateMealRate(it.toDoubleOrNull() ?: 0.0) },
                             modifier = Modifier.weight(1f)
                         )
                         RateInput(
-                            label = "Rate per Tea (₹)",
+                            label = "Rate per Tea (PKR)",
                             value = teaRate.toInt().toString(),
                             onValueChange = { viewModel.updateTeaRate(it.toDoubleOrNull() ?: 0.0) },
                             modifier = Modifier.weight(1f)
@@ -111,7 +136,7 @@ fun SummaryScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(120.dp))
             }
         }
         
@@ -138,7 +163,7 @@ fun SummaryScreen(
                     Text("Final Payable Amount", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.Bottom) {
                          Text(
-                             text = "₹${finalAmount.toInt()}",
+                             text = "PKR ${finalAmount.toInt()}",
                              style = MaterialTheme.typography.headlineMedium,
                              fontWeight = FontWeight.Bold,
                              color = MaterialTheme.colorScheme.onBackground
@@ -256,11 +281,11 @@ fun RateInput(label: String, value: String, onValueChange: (String) -> Unit, mod
                     .padding(horizontal = 16.dp),
                 textStyle = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface 
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
-            Text("INR", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp))
+            Text("PKR", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 16.dp))
         }
     }
 }
@@ -290,10 +315,10 @@ fun BreakdownCard(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("Total Meals", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$totalMeals count × ₹${mealRate.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                        Text("$totalMeals count × PKR ${mealRate.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                     }
                 }
-                Text("₹${mealCost.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text("PKR ${mealCost.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             
             Divider(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.padding(bottom = 16.dp))
@@ -311,10 +336,10 @@ fun BreakdownCard(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("Total Tea", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$totalTeas count × ₹${teaRate.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                        Text("$totalTeas count × PKR ${teaRate.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                     }
                 }
-                Text("₹${teaCost.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text("PKR ${teaCost.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }

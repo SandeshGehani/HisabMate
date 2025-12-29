@@ -21,7 +21,7 @@ val BlueText = Color(0xFF172554)
 
 // Primary Content
 val PrimaryContent = Color(0xFFFFFFFF)
-val PrimaryContentDark = Color(0xFF002C5A)
+val PrimaryContentDark = Color(0xFFFFFFFF) 
 
 // Backgrounds
 val BackgroundLight = Color(0xFFF8FAFC)

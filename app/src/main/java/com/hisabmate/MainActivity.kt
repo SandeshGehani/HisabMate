@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
         val mainViewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
         setContent {
-            HisabMateTheme {
+            HisabMateTheme(darkTheme = mainViewModel.isDarkMode) {
                 val navController = rememberNavController()
                 
                 if (mainViewModel.isLoading) {
@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
                     HisabMateNavHost(
                         navController = navController,
                         startDestination = mainViewModel.startDestination,
+                        onUpdateTheme = { mainViewModel.toggleTheme() },
                         onFinishOnboarding = {
                             mainViewModel.completeOnboarding()
                             navController.navigate(com.hisabmate.navigation.Screen.Home.route) {

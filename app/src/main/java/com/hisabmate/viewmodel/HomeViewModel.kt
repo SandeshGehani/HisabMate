@@ -31,4 +31,7 @@ class HomeViewModel(private val repository: HisabMateRepository) : ViewModel() {
         val todayStart = DateUtils.getStartOfDay(System.currentTimeMillis())
         records.find { it.date == todayStart }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val streak = repository.getStreak()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 }

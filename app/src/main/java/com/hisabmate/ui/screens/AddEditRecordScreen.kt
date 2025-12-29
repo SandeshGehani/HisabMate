@@ -38,7 +38,8 @@ import com.hisabmate.viewmodel.AddRecordViewModel
 fun AddEditRecordScreen(
     viewModel: AddRecordViewModel,
     selectedDate: Long = System.currentTimeMillis(),
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onNavigateToCalendar: () -> Unit = {}
 ) {
     // Local State
     var mealCount by remember { mutableIntStateOf(0) }
@@ -49,8 +50,7 @@ fun AddEditRecordScreen(
     var isCustomTea by remember { mutableStateOf(false) }
     var isCustomMoney by remember { mutableStateOf(true) } 
 
-    // Load existing (Future: when editing specific date, pass date)
-    // For now, always editing "Today" or creating new
+    // Load existing
     LaunchedEffect(selectedDate) {
         viewModel.loadRecordForDate(selectedDate)
     }
@@ -67,6 +67,14 @@ fun AddEditRecordScreen(
             isCustomMeal = it.mealsCount > 5
             isCustomTea = it.teasCount > 5
             isCustomMoney = it.moneyAmount.toInt() !in listOf(1000, 1500, 2000, 2500, 3000)
+        } ?: run {
+            // Reset if no record found for this date
+            mealCount = 0
+            teaCount = 0
+            contributionAmount = ""
+            isCustomMeal = false
+            isCustomTea = false
+            isCustomMoney = true
         }
     }
 
@@ -86,10 +94,13 @@ fun AddEditRecordScreen(
                 mealCount = 0
                 teaCount = 0
                 contributionAmount = ""
+                isCustomMeal = false
+                isCustomTea = false
+                isCustomMoney = true
             })
 
             // Date Strip
-            DateStrip()
+            DateStrip(selectedDate = selectedDate, onCalendarClick = onNavigateToCalendar)
 
             Column(
                 modifier = Modifier
@@ -176,7 +187,7 @@ fun AddEditRecordScreen(
                 }
                 
                 Text(
-                    text = "Records are automatically synced with your flatmates.",
+                    text = "Keep your hisab up to date daily.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -238,18 +249,31 @@ fun Header(onClose: () -> Unit, onReset: () -> Unit) {
 }
 
 @Composable
-fun DateStrip() {
+fun DateStrip(selectedDate: Long, onCalendarClick: () -> Unit) {
+    val selectedLocalDate = java.time.Instant.ofEpochMilli(selectedDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        DateItem(day = "Mon", date = "21")
-        DateItem(day = "Tue", date = "22")
-        DateItem(day = "Today", date = "23", isSelected = true)
-        DateItem(day = "Thu", date = "24", alpha = 0.6f)
-        DateItem(day = "Fri", date = "25", alpha = 0.6f)
+        // Show 5 days centered around selected date
+        (-2..2).forEach { offset ->
+            val date = selectedLocalDate.plusDays(offset.toLong())
+            val isSelected = offset == 0
+            val dayName = if (date == java.time.LocalDate.now()) "Today" else date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+            
+            Box(modifier = Modifier.weight(1f)) {
+                DateItem(
+                    day = dayName,
+                    date = date.dayOfMonth.toString(),
+                    isSelected = isSelected,
+                    alpha = if (isSelected) 1f else 0.6f
+                )
+            }
+        }
         
         // Calendar Button
         Box(
@@ -257,10 +281,11 @@ fun DateStrip() {
                 .size(width = 56.dp, height = 72.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp)),
+                .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(16.dp))
+                .clickable { onCalendarClick() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Blue500)
+            Icon(Icons.Default.CalendarMonth, contentDescription = "Calendar", tint = Blue500)
         }
     }
 }
@@ -300,7 +325,6 @@ fun DateItem(day: String, date: String, isSelected: Boolean = false, alpha: Floa
         }
     }
 }
-
 
 @Composable
 fun InputSection(
@@ -379,8 +403,7 @@ fun CountSelector(
                      .height(48.dp)
                      .clip(RoundedCornerShape(12.dp))
                      .background(bgColor)
-                     .clickable { onCountSelected(count) }
-                     .then(if (isSelected) Modifier else Modifier.border(1.dp, Color.Transparent, RoundedCornerShape(12.dp))), // Placeholder for border logic
+                     .clickable { onCountSelected(count) },
                  contentAlignment = Alignment.Center
              ) {
                  Text(text = count.toString(), color = textColor, fontWeight = fontWeight, fontSize = 16.sp)
@@ -409,7 +432,6 @@ fun MoneySelector(
      val amounts = listOf(1000, 1500, 2000, 2500, 3000)
     
      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Grid layout manually for 3 items per row
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             amounts.take(3).forEach { amount ->
                  MoneyButton(amount = amount, isSelected = selectedAmount == amount, onClick = { onAmountSelected(amount) }, modifier = Modifier.weight(1f))
@@ -419,7 +441,6 @@ fun MoneySelector(
             amounts.drop(3).forEach { amount ->
                  MoneyButton(amount = amount, isSelected = selectedAmount == amount, onClick = { onAmountSelected(amount) }, modifier = Modifier.weight(1f))
             }
-            // Other Button
             Box(
                  modifier = Modifier
                      .weight(1f)
@@ -538,4 +559,3 @@ fun SaveButtonContainer(
         }
     }
 }
-

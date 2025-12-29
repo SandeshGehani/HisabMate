@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalUriHandler
 import com.hisabmate.ui.theme.*
 import com.hisabmate.viewmodel.SummaryViewModel
 
@@ -38,6 +39,7 @@ fun SummaryScreen(
 ) {
     val mealRate by viewModel.mealRate.collectAsState()
     val teaRate by viewModel.teaRate.collectAsState()
+    val uriHandler = LocalUriHandler.current
     
     val totalMeals by viewModel.totalMeals.collectAsState()
     val totalTeas by viewModel.totalTeas.collectAsState()
@@ -117,26 +119,100 @@ fun SummaryScreen(
                     }
                 }
 
-                // Breakdown
+                // Support Section
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Breakdown",
+                        text = "Support the Developer",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    
-                    BreakdownCard(
-                        totalMeals = totalMeals,
-                        mealRate = mealRate,
-                        mealCost = mealCost,
-                        totalTeas = totalTeas,
-                        teaRate = teaRate,
-                        teaCost = teaCost
-                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier.size(40.dp).background(SoftIndigoLight, RoundedCornerShape(8.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.LocalCafe, contentDescription = null, tint = Purple500)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Buy me a tea", fontWeight = FontWeight.Bold)
+                                    Text("Help me keep this app free & offline!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { /* External Link to Payment/Support */ },
+                                modifier = Modifier.fillMaxWidth().height(44.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Text("Support Support", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(120.dp))
+                // Socials Section
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Help & Feedback",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            // Bug Report / Email
+                            SocialItem(
+                                icon = Icons.Default.CheckCircle,
+                                label = "Report Bugs & Feedback",
+                                value = "sandeshgehani77@gmail.com",
+                                onClick = { uriHandler.openUri("mailto:sandeshgehani77@gmail.com") }
+                            )
+                            Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            
+                            // Instagram
+                            SocialItem(
+                                icon = Icons.Default.Restaurant,
+                                label = "Instagram",
+                                @Suppress("HttpUrlsUsage")
+                                value = "sandeshgehanii",
+                                onClick = { uriHandler.openUri("https://www.instagram.com/sandeshgehanii/") }
+                            )
+                            Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
+                            // LinkedIn
+                            SocialItem(
+                                icon = Icons.Default.Share,
+                                label = "LinkedIn",
+                                value = "Sandesh Gehani",
+                                onClick = { uriHandler.openUri("https://www.linkedin.com/in/sandesh-gehani-31b572368/") }
+                            )
+                            Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+
+                            // GitHub
+                            SocialItem(
+                                icon = Icons.Default.Share, 
+                                label = "GitHub",
+                                value = "SandeshGehani",
+                                onClick = { uriHandler.openUri("https://github.com/SandeshGehani") }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(160.dp))
             }
         }
         
@@ -341,6 +417,24 @@ fun BreakdownCard(
                 }
                 Text("PKR ${teaCost.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
+        }
+    }
+}
+
+@Composable
+fun SocialItem(icon: ImageVector, label: String, value: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = Blue500, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

@@ -44,13 +44,13 @@ class SummaryViewModel(private val repository: HisabMateRepository) : ViewModel(
     val totalTeas = monthRecords.map { it.sumOf { r -> r.teasCount } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
 
-    val mealCost = combine(totalMeals, _mealRate) { count, rate -> count * rate }
+    val mealCost = combine(totalMeals, mealRate) { count: Double, rate: Double -> count * rate }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
         
-    val teaCost = combine(totalTeas, _teaRate) { count, rate -> count * rate }
+    val teaCost = combine(totalTeas, teaRate) { count: Double, rate: Double -> count * rate }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
         
-    val finalAmount = combine(mealCost, teaCost) { m, t -> m + t }
+    val finalAmount = combine(mealCost, teaCost) { m: Double, t: Double -> m + t }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
 
     fun updateMonth(month: Int, year: Int) {
@@ -94,8 +94,8 @@ class SummaryViewModel(private val repository: HisabMateRepository) : ViewModel(
                 totalMeals = meals,
                 totalTeas = teas,
                 totalMoney = 0.0, 
-                pricePerMeal = _mealRate.value,
-                pricePerTea = _teaRate.value,
+                pricePerMeal = mealRate.value,
+                pricePerTea = teaRate.value,
                 finalAmount = total,
                 badgeEarned = badgeText
             )

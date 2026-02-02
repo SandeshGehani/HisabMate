@@ -8,6 +8,9 @@ import com.hisabmate.utils.DateUtils
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class StreaksViewModel(private val repository: HisabMateRepository) : ViewModel() {
     
@@ -50,4 +53,18 @@ class StreaksViewModel(private val repository: HisabMateRepository) : ViewModel(
              emit(activity)
          }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), List(7) { false })
+
+    val hasEarlyBird = repository.getRecordsForRange(0, System.currentTimeMillis()).map { records ->
+        records.any { record ->
+            val hour = LocalDateTime.ofInstant(Instant.ofEpochMilli(record.updatedAt), ZoneId.systemDefault()).hour
+            hour < 10
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
+
+    val hasMidnightSnack = repository.getRecordsForRange(0, System.currentTimeMillis()).map { records ->
+        records.any { record ->
+            val hour = LocalDateTime.ofInstant(Instant.ofEpochMilli(record.updatedAt), ZoneId.systemDefault()).hour
+            hour >= 22
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
 }

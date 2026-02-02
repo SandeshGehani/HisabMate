@@ -39,6 +39,7 @@ fun SummaryScreen(
 ) {
     val mealRate by viewModel.mealRate.collectAsState()
     val teaRate by viewModel.teaRate.collectAsState()
+    val selectedMonth by viewModel.selectedMonth.collectAsState()
     val uriHandler = LocalUriHandler.current
     val monthlyGoal by viewModel.monthlyGoal.collectAsState()
     val rentAmount by viewModel.rentAmount.collectAsState()

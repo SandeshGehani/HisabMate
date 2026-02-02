@@ -20,6 +20,11 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Nature
+import androidx.compose.material.icons.filled.NaturePeople
+import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -54,6 +59,7 @@ fun HomeScreen(
     val isRentPaid by viewModel.isRentPaid.collectAsState()
     val todaysRecord by viewModel.todaysRecord.collectAsState()
     val streakObj by viewModel.streak.collectAsState()
+    val shieldCount by viewModel.shieldCount.collectAsState()
 
     val currentMonthYear = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy"))
     val todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("MMM dd"))
@@ -79,8 +85,12 @@ fun HomeScreen(
             // Streaks
             StreaksSection(
                 streakCount = streakObj?.currentStreak ?: 0,
+                shieldCount = shieldCount,
                 onStreakClick = onNavigateToStreaks
             )
+
+            // Mascot Section
+            MascotSection(streakCount = streakObj?.currentStreak ?: 0)
 
             // Main Content
             Column(
@@ -175,35 +185,113 @@ fun HeaderSection(title: String, onMenuClick: () -> Unit, onSettingsClick: () ->
 }
 
 @Composable
-fun StreaksSection(streakCount: Int, onStreakClick: () -> Unit) {
-    Row(
+fun MascotSection(streakCount: Int) {
+    val (stageName, stageIcon, stageColor) = when {
+        streakCount >= 21 -> Triple("Golden Oak", Icons.Default.Forest, Color(0xFFFFD700))
+        streakCount >= 11 -> Triple("Mature Tree", Icons.Default.Nature, Color(0xFF166534))
+        streakCount >= 4 -> Triple("Sapling", Icons.Default.NaturePeople, Color(0xFF22C55E))
+        else -> Triple("Sprout", Icons.Default.Eco, Color(0xFF86EFAC))
+    }
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 24.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 24.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = stageColor.copy(alpha = 0.1f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, stageColor.copy(alpha = 0.2f))
     ) {
-        // Streak Badge
-        BadgeItem(
-            icon = Icons.Default.LocalFireDepartment,
-            text = "$streakCount Day Streak",
-            bgColor = SoftOrangeLight,
-            contentColor = Color(0xFFC2410C), // orange-700
-            borderColor = Color(0xFFFED7AA), // orange-200
-            onClick = onStreakClick
-        )
-        
-        Spacer(modifier = Modifier.width(12.dp))
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(stageColor.copy(alpha = 0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    stageIcon,
+                    contentDescription = null,
+                    tint = if(streakCount >= 21) Color(0xFFB45309) else stageColor,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(20.dp))
+            Column {
+                Text(
+                    text = stageName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = if(streakCount >= 21) "Your financial tree is flourishing!" else "Keep logging to grow your tree.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
 
-        // Gold Pending Badge
-        BadgeItem(
-            icon = Icons.Default.MilitaryTech,
-            text = "View Badges",
-            bgColor = SoftIndigoLight, 
-            contentColor = Color(0xFF4338CA), // indigo-700
-            borderColor = Color(0xFFE0E7FF), // indigo-100
-            onClick = onStreakClick
-        )
+@Composable
+fun StreaksSection(streakCount: Int, shieldCount: Int, onStreakClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Streak Badge
+            BadgeItem(
+                icon = Icons.Default.LocalFireDepartment,
+                text = "$streakCount Day Streak",
+                bgColor = SoftOrangeLight,
+                contentColor = Color(0xFFC2410C), // orange-700
+                borderColor = Color(0xFFFED7AA), // orange-200
+                onClick = onStreakClick
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Gold Pending Badge
+            BadgeItem(
+                icon = Icons.Default.MilitaryTech,
+                text = "Badges",
+                bgColor = SoftIndigoLight, 
+                contentColor = Color(0xFF4338CA), // indigo-700
+                borderColor = Color(0xFFE0E7FF), // indigo-100
+                onClick = onStreakClick
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Streak Shields
+        Row(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text("Shields", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            repeat(3) { index ->
+                Icon(
+                    imageVector = Icons.Default.Shield,
+                    contentDescription = null,
+                    tint = if (index < shieldCount) Blue500 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
     }
 }
 

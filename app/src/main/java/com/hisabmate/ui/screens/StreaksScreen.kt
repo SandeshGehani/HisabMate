@@ -53,6 +53,8 @@ fun StreaksScreen(
     val consistency by viewModel.consistency.collectAsState()
     val earnedBadges by viewModel.earnedBadges.collectAsState()
     val last7DaysActivity by viewModel.last7DaysActivity.collectAsState()
+    val hasEarlyBird by viewModel.hasEarlyBird.collectAsState()
+    val hasMidnightSnack by viewModel.hasMidnightSnack.collectAsState()
 
     Box(
         modifier = Modifier
@@ -89,6 +91,9 @@ fun StreaksScreen(
                     monthEntries = monthEntries,
                     consistency = consistency
                 )
+                
+                // Daily Milestones
+                DailyMilestonesSection(hasEarlyBird = hasEarlyBird, hasMidnightSnack = hasMidnightSnack)
                 
                 // Badges
                 MonthlyBadgesSection(badges = earnedBadges)
@@ -404,6 +409,58 @@ fun MonthlyBadgesSection(badges: List<com.hisabmate.data.local.entities.MonthlyS
             }
         }
      }
+}
+
+@Composable
+fun DailyMilestonesSection(hasEarlyBird: Boolean, hasMidnightSnack: Boolean) {
+    Column {
+        Text("Daily Milestones", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            MilestoneCard(
+                title = "Early Bird", 
+                subtitle = "Log before 10 AM", 
+                isEarned = hasEarlyBird, 
+                icon = Icons.Default.Verified, // Changed from Eco to Verified to avoid confusion
+                modifier = Modifier.weight(1f)
+            )
+            MilestoneCard(
+                title = "Night Owl", 
+                subtitle = "Log after 10 PM", 
+                isEarned = hasMidnightSnack, 
+                icon = Icons.Default.WorkspacePremium,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun MilestoneCard(title: String, subtitle: String, isEarned: Boolean, icon: ImageVector, modifier: Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = if(isEarned) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if(isEarned) Blue500.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(if(isEarned) Blue500.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = if(isEarned) Blue500 else Color.Gray, modifier = Modifier.size(20.dp))
+            }
+            Column {
+                Text(title, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = if(isEarned) MaterialTheme.colorScheme.onSurface else Color.Gray)
+                Text(subtitle, style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
 }
 
 @Composable

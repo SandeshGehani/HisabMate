@@ -8,7 +8,12 @@ import com.hisabmate.data.local.entities.MonthlySummary
 import com.hisabmate.data.local.entities.Streak
 import com.hisabmate.data.UserPreferences
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 class HisabMateRepository(
     private val dailyRecordDao: DailyRecordDao,
@@ -21,10 +26,14 @@ class HisabMateRepository(
     val rentAmount = userPreferences.rentAmount
     val defaultMealRate = userPreferences.defaultMealRate
     val defaultTeaRate = userPreferences.defaultTeaRate
+    val shieldCount = userPreferences.shieldCount
+    val xpPoints = userPreferences.xpPoints
     
     suspend fun updateMonthlyGoal(goal: Double) = userPreferences.updateMonthlyGoal(goal)
     suspend fun updateRentAmount(amount: Double) = userPreferences.updateRentAmount(amount)
     suspend fun updateDefaultRates(meal: Double, tea: Double) = userPreferences.updateDefaultRates(meal, tea)
+    suspend fun updateShieldCount(count: Int) = userPreferences.updateShieldCount(count)
+    suspend fun addXp(points: Int) = userPreferences.addXp(points)
 
     // Daily Records
     suspend fun getRecordByDate(date: Long): DailyRecord? = dailyRecordDao.getRecordByDate(date)
@@ -48,41 +57,47 @@ class HisabMateRepository(
     
     suspend fun updateStreak(streak: Streak) = streakDao.updateStreak(streak)
 
-    suspend fun refreshStreak(newDate: Long) {
-        if (newDate > System.currentTimeMillis()) return
+    suspend fun refreshStreak(newDateMillis: Long) {
+        if (newDateMillis > System.currentTimeMillis()) return
         
         val currentStreakObj = streakDao.getStreak().firstOrNull() ?: Streak()
-        val lastDate = currentStreakObj.lastRecordedDate
+        val lastDateMillis = currentStreakObj.lastRecordedDate
         
-        // Simple logic: If newDate is 1 day after lastDate, increment.
-        // If gap > 1 day, reset to 1.
-        // If same date, do nothing.
+        if (lastDateMillis == 0L) {
+            // First record ever
+            streakDao.updateStreak(currentStreakObj.copy(currentStreak = 1, bestStreak = 1, lastRecordedDate = newDateMillis))
+            return
+        }
+
+        val lastLocalDate = Instant.ofEpochMilli(lastDateMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        val newLocalDate = Instant.ofEpochMilli(newDateMillis).atZone(ZoneId.systemDefault()).toLocalDate()
         
-        val oneDayMillis = 24 * 60 * 60 * 1000L
-        val diff = newDate - lastDate
+        val daysDiff = ChronoUnit.DAYS.between(lastLocalDate, newLocalDate)
         
+        if (daysDiff <= 0) return // Already logged today or earlier
+
         var newStreakCount = currentStreakObj.currentStreak
-        
-        if (diff > 0) {
-            if (diff <= oneDayMillis + 10000) { // Tolerance
-                newStreakCount += 1
-            } else {
-                 // Reset if missed a day (simplified, strictly consecutive)
-                 // Note: Real logic should check calendar days, here we assume midnight timestamps
-                 if (diff > oneDayMillis * 2) { 
-                     newStreakCount = 1 
-                 } else {
-                     // Gap is just 1 missed day ( > 24h but < 48h approx if purely consecutive logic)
-                     // For now, sticking to: if it's strictly next day, inc, else reset if far apart.
-                     // A robust impl requires converting to LocalDate.
-                     newStreakCount = 1
-                 }
+        val currentShields = userPreferences.shieldCount.first()
+
+        if (daysDiff == 1L) {
+            // Consecutive day
+            newStreakCount += 1
+            
+            // Award shield every 7 days (max 3)
+            if (newStreakCount % 7 == 0 && currentShields < 3) {
+                userPreferences.updateShieldCount(currentShields + 1)
             }
         } else {
-            // Updating old record or same day, don't change streak count usually
-            // Unless we are filling a gap, which is complex. 
-            // Minimal MVP: Just set to 1 if 0.
-            if (newStreakCount == 0) newStreakCount = 1
+            // Gap detected!
+            if (currentShields > 0) {
+                // Consume shield
+                userPreferences.updateShieldCount(currentShields - 1)
+                // Preserve streak (act as if it was consecutive)
+                newStreakCount += 1 
+            } else {
+                // Streak broken
+                newStreakCount = 1
+            }
         }
         
         val best = maxOf(currentStreakObj.bestStreak, newStreakCount)
@@ -91,7 +106,7 @@ class HisabMateRepository(
             currentStreakObj.copy(
                 currentStreak = newStreakCount,
                 bestStreak = best,
-                lastRecordedDate = if (newDate > lastDate) newDate else lastDate
+                lastRecordedDate = newDateMillis
             )
         )
     }

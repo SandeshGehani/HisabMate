@@ -30,6 +30,12 @@ class HomeViewModel(private val repository: HisabMateRepository) : ViewModel() {
     
     val rentAmount = repository.rentAmount
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+        
+    val shieldCount = repository.shieldCount
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+        
+    val xpPoints = repository.xpPoints
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     
     private val _isRentPaid = MutableStateFlow(false) // This should ideally be persisted per month
     val isRentPaid = _isRentPaid.asStateFlow()

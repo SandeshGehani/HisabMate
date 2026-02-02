@@ -16,6 +16,8 @@ class UserPreferences(private val context: Context) {
         val RENT_AMOUNT = doublePreferencesKey("rent_amount")
         val DEFAULT_MEAL_RATE = doublePreferencesKey("default_meal_rate")
         val DEFAULT_TEA_RATE = doublePreferencesKey("default_tea_rate")
+        val SHIELD_COUNT = intPreferencesKey("shield_count")
+        val XP_POINTS = intPreferencesKey("xp_points")
     }
 
     val monthlyGoal: Flow<Double> = context.dataStore.data.map { preferences ->
@@ -34,6 +36,14 @@ class UserPreferences(private val context: Context) {
         preferences[DEFAULT_TEA_RATE] ?: 10.0
     }
 
+    val shieldCount: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[SHIELD_COUNT] ?: 1 // Start with 1 shield
+    }
+
+    val xpPoints: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[XP_POINTS] ?: 0
+    }
+
     suspend fun updateMonthlyGoal(goal: Double) {
         context.dataStore.edit { preferences ->
             preferences[MONTHLY_GOAL] = goal
@@ -50,6 +60,19 @@ class UserPreferences(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[DEFAULT_MEAL_RATE] = meal
             preferences[DEFAULT_TEA_RATE] = tea
+        }
+    }
+
+    suspend fun updateShieldCount(count: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[SHIELD_COUNT] = count
+        }
+    }
+
+    suspend fun addXp(points: Int) {
+        context.dataStore.edit { preferences ->
+            val current = preferences[XP_POINTS] ?: 0
+            preferences[XP_POINTS] = current + points
         }
     }
 }

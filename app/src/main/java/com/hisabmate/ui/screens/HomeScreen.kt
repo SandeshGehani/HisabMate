@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -47,6 +49,9 @@ fun HomeScreen(
     val totalMeals by viewModel.totalMeals.collectAsState()
     val totalTeas by viewModel.totalTeas.collectAsState()
     val totalMoney by viewModel.totalContribution.collectAsState()
+    val monthlyGoal by viewModel.monthlyGoal.collectAsState()
+    val rentAmount by viewModel.rentAmount.collectAsState()
+    val isRentPaid by viewModel.isRentPaid.collectAsState()
     val todaysRecord by viewModel.todaysRecord.collectAsState()
     val streakObj by viewModel.streak.collectAsState()
 
@@ -109,15 +114,24 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Contribution Card
-                ContributionCard(amount = totalMoney)
+                ContributionCard(amount = totalMoney, goal = monthlyGoal)
+                
+                if (rentAmount > 0) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    RentStatusCard(
+                        amount = rentAmount,
+                        isPaid = isRentPaid,
+                        onToggle = { viewModel.toggleRentPaid() }
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Today's Log
                 TodaysLogSection(
                     date = todayDate,
-                    meals = todaysRecord?.mealsCount ?: 0,
-                    teas = todaysRecord?.teasCount ?: 0
+                    meals = todaysRecord?.mealsCount ?: 0.0,
+                    teas = todaysRecord?.teasCount ?: 0.0
                 )
                 
                  Spacer(modifier = Modifier.height(24.dp))
@@ -273,9 +287,8 @@ fun SummaryCard(
 }
 
 @Composable
-fun ContributionCard(amount: Double) {
-    val monthlyGoal = 10000.0 // Default target for now
-    val progress = (amount / monthlyGoal).coerceIn(0.0, 1.0).toFloat()
+fun ContributionCard(amount: Double, goal: Double) {
+    val progress = (amount / goal).coerceIn(0.0, 1.0).toFloat()
     val percentage = (progress * 100).toInt()
 
     Card(
@@ -343,23 +356,96 @@ fun ContributionCard(amount: Double) {
                         .fillMaxWidth(progress)
                         .fillMaxHeight()
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
+                        .background(Blue500)
                 )
             }
             
             Spacer(modifier = Modifier.height(8.dp))
             
-            Text(
-                text = "$percentage% of monthly goal reached (PKR 10k)",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = "$percentage% reached",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Goal: PKR ${goal.toInt()}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RentStatusCard(amount: Double, isPaid: Boolean, onToggle: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPaid) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) 
+                             else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, 
+            if (isPaid) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            else MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            if (isPaid) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            else MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        if (isPaid) Icons.Default.Verified else Icons.Default.Error,
+                        contentDescription = null,
+                        tint = if (isPaid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = if (isPaid) "Rent Paid" else "Rent Unpaid",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isPaid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "PKR ${amount.toInt()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Switch(
+                checked = isPaid,
+                onCheckedChange = { onToggle() },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                )
             )
         }
     }
 }
 
 @Composable
-fun TodaysLogSection(date: String, meals: Int, teas: Int) {
+fun TodaysLogSection(date: String, meals: Double, teas: Double) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -385,22 +471,22 @@ fun TodaysLogSection(date: String, meals: Int, teas: Int) {
             }
         }
 
-        if (meals == 0 && teas == 0) {
+        if (meals == 0.0 && teas == 0.0) {
             Text("No records for today.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
-            if (meals > 0) {
+            if (meals > 0.0) {
                 LogItem(
                     icon = Icons.Default.Restaurant,
-                    title = "$meals Meals",
+                    title = "${meals.toString().removeSuffix(".0")} Meals",
                     time = "", // Time tracking not implemented yet
                     iconBg = Color(0xFFDBEAFE),
                     iconTint = Color(0xFF2563EB)
                 )
             }
-            if (teas > 0) {
+            if (teas > 0.0) {
                  LogItem(
                     icon = Icons.Default.LocalCafe,
-                    title = "$teas Teas",
+                    title = "${teas.toString().removeSuffix(".0")} Teas",
                     time = "",
                     iconBg = Color(0xFFFEF3C7),
                     iconTint = Color(0xFFD97706)

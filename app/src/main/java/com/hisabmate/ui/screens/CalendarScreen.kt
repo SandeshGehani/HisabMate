@@ -40,10 +40,14 @@ import java.time.YearMonth
 fun CalendarScreen(
     viewModel: CalendarViewModel,
     onBack: () -> Unit = {},
-    onNavigateToEntry: (Long) -> Unit = {}
+    onNavigateToEntry: (Long) -> Unit = {},
+    onViewDetails: () -> Unit = {}
 ) {
     val records by viewModel.monthlyRecords.collectAsState(initial = emptyList())
     
+    val selectedMonth by viewModel.selectedMonth.collectAsState()
+    val selectedYear by viewModel.selectedYear.collectAsState()
+
     // Map records by date for easy lookup by day
     val recordsByDay = records.associateBy { record ->
         java.time.Instant.ofEpochMilli(record.date).atZone(java.time.ZoneId.systemDefault()).dayOfMonth
@@ -57,11 +61,22 @@ fun CalendarScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            CalendarHeader(onBack = onBack)
+            CalendarHeader(
+                month = selectedMonth,
+                year = selectedYear,
+                onBack = onBack,
+                onPrevMonth = { viewModel.previousMonth() },
+                onNextMonth = { viewModel.nextMonth() }
+            )
             
             DaysOfWeekHeader()
 
-            CalendarGrid(records = recordsByDay, onDateClick = onNavigateToEntry)
+            CalendarGrid(
+                month = selectedMonth,
+                year = selectedYear,
+                records = recordsByDay, 
+                onDateClick = onNavigateToEntry
+            )
         }
 
         // Bottom Sheet / Floating Summary
@@ -79,17 +94,23 @@ fun CalendarScreen(
                 meals = totalMeals,
                 teas = totalTeas,
                 spent = totalSpent,
-                onAddRecord = { onNavigateToEntry(System.currentTimeMillis()) }
+                onAddRecord = { onNavigateToEntry(System.currentTimeMillis()) },
+                onViewDetails = onViewDetails
             )
         }
     }
 }
 
 @Composable
-fun CalendarHeader(onBack: () -> Unit) {
-    val currentDate = LocalDate.now()
-    val monthName = currentDate.month.name.lowercase().replaceFirstChar { it.uppercase() }
-    val year = currentDate.year
+fun CalendarHeader(
+    month: Int, 
+    year: Int, 
+    onBack: () -> Unit,
+    onPrevMonth: () -> Unit,
+    onNextMonth: () -> Unit
+) {
+    val monthName = java.time.Month.of(month).name.lowercase().replaceFirstChar { it.uppercase() }
+    val isCurrentMonth = month == LocalDate.now().monthValue && year == LocalDate.now().year
     
     Row(
         modifier = Modifier
@@ -103,28 +124,35 @@ fun CalendarHeader(onBack: () -> Unit) {
             Icon(Icons.Default.ChevronLeft, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
         }
         
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onPrevMonth) {
+                Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 8.dp)) {
                 Text(
                     text = "$monthName $year",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                if (isCurrentMonth) {
+                    Text(
+                        text = "CURRENT MONTH",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Blue500,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
             }
-            Text(
-                text = "CURRENT MONTH",
-                style = MaterialTheme.typography.labelSmall,
-                color = Blue500,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
+
+            IconButton(onClick = onNextMonth) {
+                Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+            }
         }
 
-        IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.ChevronRight, contentDescription = "Next", tint = MaterialTheme.colorScheme.onSurface)
-        }
+        Spacer(modifier = Modifier.size(40.dp)) // To balance the back button
     }
 }
 
@@ -146,10 +174,15 @@ fun DaysOfWeekHeader() {
 }
 
 @Composable
-fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: (Long) -> Unit) {
-    val currentMonth = YearMonth.now()
-    val daysInMonth = currentMonth.lengthOfMonth()
-    val firstOfMonth = currentMonth.atDay(1)
+fun CalendarGrid(
+    month: Int,
+    year: Int,
+    records: Map<Int, DailyRecord>, 
+    onDateClick: (Long) -> Unit
+) {
+    val currentYearMonth = java.time.YearMonth.of(year, month)
+    val daysInMonth = currentYearMonth.lengthOfMonth()
+    val firstOfMonth = currentYearMonth.atDay(1)
     val dayOfWeekOffset = firstOfMonth.dayOfWeek.value % 7 // 0 for Sunday
     
     LazyVerticalGrid(
@@ -167,9 +200,15 @@ fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: (Long) -> Unit) {
         items(daysInMonth) { index ->
             val day = index + 1
             val record = records[day]
-            val date = LocalDate.now().withDayOfMonth(day)
+            val date = java.time.LocalDate.of(year, month, day)
             val dateMillis = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-            DayCell(day = day, record = record, onClick = { onDateClick(dateMillis) })
+            DayCell(
+                day = day, 
+                month = month,
+                year = year,
+                record = record, 
+                onClick = { onDateClick(dateMillis) }
+            )
         }
         
         // Spacer for bottom content
@@ -180,10 +219,11 @@ fun CalendarGrid(records: Map<Int, DailyRecord>, onDateClick: (Long) -> Unit) {
 }
 
 @Composable
-fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
-    val date = LocalDate.now()
-    val isToday = day == date.dayOfMonth
-    val isFuture = day > date.dayOfMonth
+fun DayCell(day: Int, month: Int, year: Int, record: DailyRecord?, onClick: () -> Unit) {
+    val today = LocalDate.now()
+    val dateAtCell = LocalDate.of(year, month, day)
+    val isToday = dateAtCell == today
+    val isFuture = dateAtCell.isAfter(today)
     
     val hasData = record != null
     
@@ -229,13 +269,13 @@ fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
                 if (record!!.mealsCount > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Restaurant, contentDescription = null, tint = Orange500, modifier = Modifier.size(10.dp))
-                        Text(record.mealsCount.toString(), fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(record.mealsCount.toString().removeSuffix(".0"), fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 if (record.teasCount > 0) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.LocalCafe, contentDescription = null, tint = Purple500, modifier = Modifier.size(10.dp))
-                        Text(record.teasCount.toString(), fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(record.teasCount.toString().removeSuffix(".0"), fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 if (record.moneyAmount > 0) {
@@ -255,7 +295,7 @@ fun DayCell(day: Int, record: DailyRecord?, onClick: () -> Unit) {
 }
 
 @Composable
-fun MonthlySummaryCard(meals: Int, teas: Int, spent: Double, onAddRecord: () -> Unit) {
+fun MonthlySummaryCard(meals: Double, teas: Double, spent: Double, onAddRecord: () -> Unit, onViewDetails: () -> Unit) {
     Card(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -282,9 +322,9 @@ fun MonthlySummaryCard(meals: Int, teas: Int, spent: Double, onAddRecord: () -> 
             }
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SummaryItem(count = meals.toString(), label = "Meals", icon = Icons.Default.Restaurant, iconTint = Orange500, modifier = Modifier.weight(1f))
-                SummaryItem(count = teas.toString(), label = "Teas", icon = Icons.Default.LocalCafe, iconTint = Purple500, modifier = Modifier.weight(1f))
-                SummaryItem(count = "Rs." + spent.toInt().toString(), label = "Spent", icon = Icons.Default.AttachMoney, iconTint = Blue500, modifier = Modifier.weight(1f))
+                SummaryItem(count = meals.toString().removeSuffix(".0"), label = "Meals", icon = Icons.Default.Restaurant, iconTint = Orange500, modifier = Modifier.weight(1f))
+                SummaryItem(count = teas.toString().removeSuffix(".0"), label = "Teas", icon = Icons.Default.LocalCafe, iconTint = Purple500, modifier = Modifier.weight(1f))
+                SummaryItem(count = spent.toInt().toString(), label = "Spent", icon = Icons.Default.AttachMoney, iconTint = Blue500, modifier = Modifier.weight(1f))
             }
             
             Spacer(modifier = Modifier.height(16.dp))

@@ -13,7 +13,7 @@ import com.hisabmate.data.local.entities.Streak
 
 @Database(
     entities = [DailyRecord::class, MonthlySummary::class, Streak::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class HisabMateDatabase : RoomDatabase() {
@@ -31,7 +31,8 @@ abstract class HisabMateDatabase : RoomDatabase() {
                     context.applicationContext,
                     HisabMateDatabase::class.java,
                     "hisabmate_db"
-                ).build()
+                ).fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

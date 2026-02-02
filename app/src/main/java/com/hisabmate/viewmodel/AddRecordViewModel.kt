@@ -21,7 +21,7 @@ class AddRecordViewModel(private val repository: HisabMateRepository) : ViewMode
         }
     }
 
-    fun saveRecord(date: Long, meals: Int, teas: Int, money: Double) {
+    fun saveRecord(date: Long, meals: Double, teas: Double, money: Double) {
         viewModelScope.launch {
             val startOfDay = DateUtils.getStartOfDay(date)
             // Preserve creation time if updating

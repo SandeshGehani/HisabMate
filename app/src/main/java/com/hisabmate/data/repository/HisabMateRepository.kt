@@ -6,14 +6,26 @@ import com.hisabmate.data.local.dao.StreakDao
 import com.hisabmate.data.local.entities.DailyRecord
 import com.hisabmate.data.local.entities.MonthlySummary
 import com.hisabmate.data.local.entities.Streak
+import com.hisabmate.data.UserPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
 class HisabMateRepository(
     private val dailyRecordDao: DailyRecordDao,
     private val monthlySummaryDao: MonthlySummaryDao,
-    private val streakDao: StreakDao
+    private val streakDao: StreakDao,
+    private val userPreferences: UserPreferences
 ) {
+    // User Preferences
+    val monthlyGoal = userPreferences.monthlyGoal
+    val rentAmount = userPreferences.rentAmount
+    val defaultMealRate = userPreferences.defaultMealRate
+    val defaultTeaRate = userPreferences.defaultTeaRate
+    
+    suspend fun updateMonthlyGoal(goal: Double) = userPreferences.updateMonthlyGoal(goal)
+    suspend fun updateRentAmount(amount: Double) = userPreferences.updateRentAmount(amount)
+    suspend fun updateDefaultRates(meal: Double, tea: Double) = userPreferences.updateDefaultRates(meal, tea)
+
     // Daily Records
     suspend fun getRecordByDate(date: Long): DailyRecord? = dailyRecordDao.getRecordByDate(date)
     

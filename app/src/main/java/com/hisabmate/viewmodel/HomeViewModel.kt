@@ -19,14 +19,30 @@ class HomeViewModel(private val repository: HisabMateRepository) : ViewModel() {
     val currentMonthRecords: Flow<List<DailyRecord>> = repository.getRecordsForRange(startOfMonth, endOfMonth)
     
     val totalMeals = currentMonthRecords.map { records -> records.sumOf { it.mealsCount } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-        
-    val totalTeas = currentMonthRecords.map { records -> records.sumOf { it.teasCount } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-        
-    val totalContribution = currentMonthRecords.map { records -> records.sumOf { it.moneyAmount } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
         
+    val totalTeas = currentMonthRecords.map { records -> records.sumOf { it.teasCount } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+        
+    // Preferences
+    val monthlyGoal = repository.monthlyGoal
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10000.0)
+    
+    val rentAmount = repository.rentAmount
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    
+    private val _isRentPaid = MutableStateFlow(false) // This should ideally be persisted per month
+    val isRentPaid = _isRentPaid.asStateFlow()
+
+    val totalContribution = combine(currentMonthRecords, rentAmount, _isRentPaid) { records, rent, paid ->
+        val recordTotal = records.sumOf { it.moneyAmount }
+        if (paid) recordTotal + rent else recordTotal
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    
+    fun toggleRentPaid() {
+        _isRentPaid.value = !_isRentPaid.value
+    }
+
     val todaysRecord = currentMonthRecords.map { records -> 
         val todayStart = DateUtils.getStartOfDay(System.currentTimeMillis())
         records.find { it.date == todayStart }

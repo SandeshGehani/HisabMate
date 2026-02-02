@@ -7,31 +7,42 @@ import com.hisabmate.data.repository.HisabMateRepository
 import com.hisabmate.utils.DateUtils
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import com.hisabmate.data.local.entities.DailyRecord
 import java.time.LocalDate
 
 class SummaryViewModel(private val repository: HisabMateRepository) : ViewModel() {
 
-    private val currentMonth = LocalDate.now().monthValue
-    private val currentYear = LocalDate.now().year
+    private val _selectedMonth = MutableStateFlow(LocalDate.now().monthValue)
+    val selectedMonth = _selectedMonth.asStateFlow()
+    
+    private val _selectedYear = MutableStateFlow(LocalDate.now().year)
+    val selectedYear = _selectedYear.asStateFlow()
     
     // Inputs
-    private val _mealRate = MutableStateFlow(50.0)
-    val mealRate = _mealRate.asStateFlow()
+    val mealRate = repository.defaultMealRate
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 50.0)
     
-    private val _teaRate = MutableStateFlow(10.0)
-    val teaRate = _teaRate.asStateFlow()
+    val teaRate = repository.defaultTeaRate
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10.0)
+    
+    val monthlyGoal = repository.monthlyGoal
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 10000.0)
+        
+    val rentAmount = repository.rentAmount
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
     
     // Data
-    private val monthRecords = repository.getRecordsForRange(
-        DateUtils.getStartOfMonth(currentMonth, currentYear),
-        DateUtils.getEndOfMonth(currentMonth, currentYear)
-    )
+    val monthRecords: Flow<List<DailyRecord>> = combine(_selectedMonth, _selectedYear) { month, year ->
+        DateUtils.getStartOfMonth(month, year) to DateUtils.getEndOfMonth(month, year)
+    }.flatMapLatest { (start, end) ->
+        repository.getRecordsForRange(start, end)
+    }
     
     val totalMeals = monthRecords.map { it.sumOf { r -> r.mealsCount } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
         
     val totalTeas = monthRecords.map { it.sumOf { r -> r.teasCount } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
 
     val mealCost = combine(totalMeals, _mealRate) { count, rate -> count * rate }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
@@ -42,31 +53,50 @@ class SummaryViewModel(private val repository: HisabMateRepository) : ViewModel(
     val finalAmount = combine(mealCost, teaCost) { m, t -> m + t }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0.0)
 
+    fun updateMonth(month: Int, year: Int) {
+        _selectedMonth.value = month
+        _selectedYear.value = year
+    }
+
     fun updateMealRate(rate: Double) {
-        _mealRate.value = rate
+        viewModelScope.launch { repository.updateDefaultRates(meal = rate, tea = teaRate.value) }
     }
 
     fun updateTeaRate(rate: Double) {
-        _teaRate.value = rate
+        viewModelScope.launch { repository.updateDefaultRates(meal = mealRate.value, tea = rate) }
+    }
+
+    fun updateMonthlyGoal(goal: Double) {
+        viewModelScope.launch { repository.updateMonthlyGoal(goal) }
+    }
+
+    fun updateRentAmount(amount: Double) {
+        viewModelScope.launch { repository.updateRentAmount(amount) }
     }
     
     fun saveSummary() {
         viewModelScope.launch {
-            // Check if all days have records
-            val daysInMonth = java.time.YearMonth.of(currentYear, currentMonth).lengthOfMonth()
-            val hasAllDays = totalMeals.value >= daysInMonth // Simplified: assumes at least 1 meal per day
+            val meals = totalMeals.value
+            val teas = totalTeas.value
+            val total = finalAmount.value
             
-            val badgeText = if (hasAllDays) "COMPLETE_MONTH" else "NONE"
+            // Basic badge logic
+            val badgeText = when {
+                meals > 60 -> "MEAL_KING"
+                teas > 100 -> "TEA_MASTER"
+                total < 5000 -> "SAVER"
+                else -> "REGULAR"
+            }
             
             val summary = MonthlySummary(
-                month = currentMonth,
-                year = currentYear,
-                totalMeals = totalMeals.value,
-                totalTeas = totalTeas.value,
-                totalMoney = 0.0, // Simplification for now, usually sum of moneyAmount
+                month = _selectedMonth.value,
+                year = _selectedYear.value,
+                totalMeals = meals,
+                totalTeas = teas,
+                totalMoney = 0.0, 
                 pricePerMeal = _mealRate.value,
                 pricePerTea = _teaRate.value,
-                finalAmount = finalAmount.value,
+                finalAmount = total,
                 badgeEarned = badgeText
             )
             repository.saveSummary(summary)

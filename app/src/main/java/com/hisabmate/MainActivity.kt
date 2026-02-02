@@ -41,11 +41,13 @@ class MainActivity : ComponentActivity() {
         }
 
         // Database & Repo
+        val userPreferences = com.hisabmate.data.UserPreferences(applicationContext)
         val database = HisabMateDatabase.getDatabase(applicationContext)
         val repository = HisabMateRepository(
             database.dailyRecordDao(),
             database.monthlySummaryDao(),
-            database.streakDao()
+            database.streakDao(),
+            userPreferences
         )
 
         val viewModelFactory = HisabMateViewModelFactory(repository)

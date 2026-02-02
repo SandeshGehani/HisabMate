@@ -1,4 +1,5 @@
 package com.hisabmate.ui.screens
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hisabmate.ui.theme.*
@@ -37,13 +39,14 @@ import com.hisabmate.viewmodel.AddRecordViewModel
 @Composable
 fun AddEditRecordScreen(
     viewModel: AddRecordViewModel,
-    selectedDate: Long = System.currentTimeMillis(),
+    initialDate: Long = System.currentTimeMillis(),
     onBack: () -> Unit = {},
     onNavigateToCalendar: () -> Unit = {}
 ) {
+    var selectedDate by remember { mutableLongStateOf(initialDate) }
     // Local State
-    var mealCount by remember { mutableIntStateOf(0) }
-    var teaCount by remember { mutableIntStateOf(0) }
+    var mealCount by remember { mutableDoubleStateOf(0.0) }
+    var teaCount by remember { mutableDoubleStateOf(0.0) }
     var contributionAmount by remember { mutableStateOf("") }
     
     var isCustomMeal by remember { mutableStateOf(false) }
@@ -64,13 +67,13 @@ fun AddEditRecordScreen(
             contributionAmount = if (it.moneyAmount > 0) it.moneyAmount.toInt().toString() else ""
             
             // Check if amounts fit in standard pill selections
-            isCustomMeal = it.mealsCount > 5
-            isCustomTea = it.teasCount > 5
+            isCustomMeal = it.mealsCount !in listOf(0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0)
+            isCustomTea = it.teasCount !in listOf(0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0)
             isCustomMoney = it.moneyAmount.toInt() !in listOf(1000, 1500, 2000, 2500, 3000)
         } ?: run {
             // Reset if no record found for this date
-            mealCount = 0
-            teaCount = 0
+            mealCount = 0.0
+            teaCount = 0.0
             contributionAmount = ""
             isCustomMeal = false
             isCustomTea = false
@@ -91,8 +94,8 @@ fun AddEditRecordScreen(
         ) {
             // Sticky Header (Simulated)
             Header(onClose = onBack, onReset = {
-                mealCount = 0
-                teaCount = 0
+                mealCount = 0.0
+                teaCount = 0.0
                 contributionAmount = ""
                 isCustomMeal = false
                 isCustomTea = false
@@ -100,7 +103,11 @@ fun AddEditRecordScreen(
             })
 
             // Date Strip
-            DateStrip(selectedDate = selectedDate, onCalendarClick = onNavigateToCalendar)
+            DateStrip(
+                selectedDate = selectedDate, 
+                onDateSelected = { selectedDate = it },
+                onCalendarClick = onNavigateToCalendar
+            )
 
             Column(
                 modifier = Modifier
@@ -117,9 +124,9 @@ fun AddEditRecordScreen(
                     iconTint = Color(0xFFEA580C), // orange-600
                 ) {
                     CountSelector(
-                        selectedCount = if (isCustomMeal) -1 else mealCount,
+                        selectedCount = if (isCustomMeal) -1.0 else mealCount,
                         onCountSelected = { count ->
-                            mealCount = if (mealCount == count) 0 else count
+                            mealCount = if (mealCount == count) 0.0 else count
                             isCustomMeal = false
                         },
                         onCustomClick = { isCustomMeal = true }
@@ -127,7 +134,7 @@ fun AddEditRecordScreen(
                     if (isCustomMeal) {
                         CustomInput(
                             value = if (mealCount > 5) mealCount.toString() else (if(mealCount > 0) mealCount.toString() else ""),
-                            onValueChange = { mealCount = it.toIntOrNull() ?: 0 },
+                            onValueChange = { mealCount = it.toDoubleOrNull() ?: 0.0 },
                             label = "Custom Amount",
                             suffix = ""
                         )
@@ -143,9 +150,9 @@ fun AddEditRecordScreen(
                     iconTint = Color(0xFF2563EB), // blue-600
                 ) {
                     CountSelector(
-                        selectedCount = if (isCustomTea) -1 else teaCount,
+                        selectedCount = if (isCustomTea) -1.0 else teaCount,
                         onCountSelected = { count ->
-                            teaCount = if (teaCount == count) 0 else count 
+                            teaCount = if (teaCount == count) 0.0 else count 
                             isCustomTea = false
                         },
                         onCustomClick = { isCustomTea = true }
@@ -153,7 +160,7 @@ fun AddEditRecordScreen(
                     if (isCustomTea) {
                         CustomInput(
                             value = if (teaCount > 5) teaCount.toString() else (if(teaCount > 0) teaCount.toString() else ""),
-                            onValueChange = { teaCount = it.toIntOrNull() ?: 0 },
+                            onValueChange = { teaCount = it.toDoubleOrNull() ?: 0.0 },
                             label = "Custom Amount",
                             suffix = ""
                         )
@@ -272,7 +279,7 @@ fun Header(onClose: () -> Unit, onReset: () -> Unit) {
 }
 
 @Composable
-fun DateStrip(selectedDate: Long, onCalendarClick: () -> Unit) {
+fun DateStrip(selectedDate: Long, onDateSelected: (Long) -> Unit, onCalendarClick: () -> Unit) {
     val selectedLocalDate = java.time.Instant.ofEpochMilli(selectedDate).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
     
     Row(
@@ -285,10 +292,13 @@ fun DateStrip(selectedDate: Long, onCalendarClick: () -> Unit) {
         // Show 5 days centered around selected date
         (-2..2).forEach { offset ->
             val date = selectedLocalDate.plusDays(offset.toLong())
+            val dateMillis = date.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
             val isSelected = offset == 0
             val dayName = if (date == java.time.LocalDate.now()) "Today" else date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
             
-            Box(modifier = Modifier.weight(1f)) {
+            Box(modifier = Modifier.weight(1f).clickable { 
+                onDateSelected(dateMillis)
+            }) {
                 DateItem(
                     day = dayName,
                     date = date.dayOfMonth.toString(),
@@ -406,30 +416,67 @@ fun InputSection(
 
 @Composable
 fun CountSelector(
-    selectedCount: Int,
-    onCountSelected: (Int) -> Unit,
+    selectedCount: Double,
+    onCountSelected: (Double) -> Unit,
     onCustomClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        (0..5).forEach { count ->
-             val isSelected = selectedCount == count
-             val bgColor = if (isSelected) Blue500 else MaterialTheme.colorScheme.background
-             val textColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-             val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0).take(4).forEach { count ->
+                 val isSelected = selectedCount == count
+                 val bgColor = if (isSelected) Blue500 else MaterialTheme.colorScheme.background
+                 val textColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                 val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
 
-             Box(
+                 Box(
+                     modifier = Modifier
+                         .weight(1f)
+                         .height(44.dp)
+                         .clip(RoundedCornerShape(12.dp))
+                         .background(bgColor)
+                         .clickable { onCountSelected(count) },
+                     contentAlignment = Alignment.Center
+                 ) {
+                     Text(text = count.toString().removeSuffix(".0"), color = textColor, fontWeight = fontWeight, fontSize = 14.sp)
+                 }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(0.0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0).drop(4).forEach { count ->
+                 val isSelected = selectedCount == count
+                 val bgColor = if (isSelected) Blue500 else MaterialTheme.colorScheme.background
+                 val textColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                 val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+
+                 Box(
+                     modifier = Modifier
+                         .weight(1f)
+                         .height(44.dp)
+                         .clip(RoundedCornerShape(12.dp))
+                         .background(bgColor)
+                         .clickable { onCountSelected(count) },
+                     contentAlignment = Alignment.Center
+                 ) {
+                     Text(text = count.toString().removeSuffix(".0"), color = textColor, fontWeight = fontWeight, fontSize = 14.sp)
+                 }
+            }
+            // Other/Custom button placeholder
+            Box(
                  modifier = Modifier
                      .weight(1f)
-                     .height(48.dp)
+                     .height(44.dp)
                      .clip(RoundedCornerShape(12.dp))
-                     .background(bgColor)
-                     .clickable { onCountSelected(count) },
+                     .background(if (selectedCount == -1.0) Blue500 else MaterialTheme.colorScheme.background)
+                     .clickable { onCustomClick() },
                  contentAlignment = Alignment.Center
              ) {
-                 Text(text = count.toString(), color = textColor, fontWeight = fontWeight, fontSize = 16.sp)
+                 Text(text = "Custom", color = if (selectedCount == -1.0) Color.White else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold, fontSize = 14.sp)
              }
         }
     }

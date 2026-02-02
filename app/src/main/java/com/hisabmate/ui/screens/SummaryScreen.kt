@@ -40,6 +40,8 @@ fun SummaryScreen(
     val mealRate by viewModel.mealRate.collectAsState()
     val teaRate by viewModel.teaRate.collectAsState()
     val uriHandler = LocalUriHandler.current
+    val monthlyGoal by viewModel.monthlyGoal.collectAsState()
+    val rentAmount by viewModel.rentAmount.collectAsState()
     
     val totalMeals by viewModel.totalMeals.collectAsState()
     val totalTeas by viewModel.totalTeas.collectAsState()
@@ -69,7 +71,8 @@ fun SummaryScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 // Status Card
-                StatusCard()
+                val monthName = java.time.Month.of(selectedMonth).name.lowercase().replaceFirstChar { it.uppercase() }
+                StatusCard(monthName = monthName)
 
                 // Theme Settings
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -105,13 +108,13 @@ fun SummaryScreen(
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         RateInput(
-                            label = "Rate per Meal (PKR)",
+                            label = "Meals",
                             value = mealRate.toInt().toString(),
                             onValueChange = { viewModel.updateMealRate(it.toDoubleOrNull() ?: 0.0) },
                             modifier = Modifier.weight(1f)
                         )
                         RateInput(
-                            label = "Rate per Tea (PKR)",
+                            label = "Teas",
                             value = teaRate.toInt().toString(),
                             onValueChange = { viewModel.updateTeaRate(it.toDoubleOrNull() ?: 0.0) },
                             modifier = Modifier.weight(1f)
@@ -119,45 +122,39 @@ fun SummaryScreen(
                     }
                 }
 
-                // Support Section
+                // App Configuration (Goal & Rent)
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Support the Developer",
+                        text = "Contribution Goals",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier.size(40.dp).background(SoftIndigoLight, RoundedCornerShape(8.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.LocalCafe, contentDescription = null, tint = Purple500)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Buy me a tea", fontWeight = FontWeight.Bold)
-                                    Text("Help me keep this app free & offline!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { /* External Link to Payment/Support */ },
-                                modifier = Modifier.fillMaxWidth().height(44.dp),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                            ) {
-                                Text("Support Support", fontWeight = FontWeight.Bold)
-                            }
-                        }
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        RateInput(
+                            label = "Goal",
+                            value = monthlyGoal.toInt().toString(),
+                            onValueChange = { viewModel.updateMonthlyGoal(it.toDoubleOrNull() ?: 0.0) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        RateInput(
+                            label = "Rent",
+                            value = rentAmount.toInt().toString(),
+                            onValueChange = { viewModel.updateRentAmount(it.toDoubleOrNull() ?: 0.0) },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
+
+                // Breakdown Card
+                BreakdownCard(
+                    totalMeals = totalMeals,
+                    mealRate = mealRate,
+                    mealCost = mealCost,
+                    totalTeas = totalTeas,
+                    teaRate = teaRate,
+                    teaCost = teaCost
+                )
 
                 // Socials Section
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -173,7 +170,6 @@ fun SummaryScreen(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                            // Bug Report / Email
                             SocialItem(
                                 icon = Icons.Default.CheckCircle,
                                 label = "Report Bugs & Feedback",
@@ -181,31 +177,20 @@ fun SummaryScreen(
                                 onClick = { uriHandler.openUri("mailto:sandeshgehani18@gmail.com") }
                             )
                             Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                            
-                            // Instagram
-                            // Instagram
                             SocialItem(
                                 icon = Icons.Default.Restaurant,
                                 label = "Instagram",
                                 value = "sandeshgehanii",
                                 onClick = { uriHandler.openUri("https://www.instagram.com/sandeshgehanii/") }
                             )
-
                             Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
-                            // LinkedIn
-                            // LinkedIn
                             SocialItem(
                                 icon = Icons.Default.Share,
                                 label = "LinkedIn",
                                 value = "Sandesh Gehani",
                                 onClick = { uriHandler.openUri("https://www.linkedin.com/in/sandeshgehani/") }
                             )
-
-
                             Divider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-
-                            // GitHub
                             SocialItem(
                                 icon = Icons.Default.Share, 
                                 label = "GitHub",
@@ -230,25 +215,19 @@ fun SummaryScreen(
                 .navigationBarsPadding(),
              verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            
-            // Divider
             Divider(color = MaterialTheme.colorScheme.surfaceVariant)
-            
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = "PKR ${finalAmount.toInt()}",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                Text(
+                    text = "PKR ${finalAmount.toInt()}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
-            
             Button(
                 onClick = { /* Share Logic */ },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -298,7 +277,7 @@ fun SummaryHeader(onBack: () -> Unit, onSave: () -> Unit) {
 }
 
 @Composable
-fun StatusCard() {
+fun StatusCard(monthName: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -320,8 +299,8 @@ fun StatusCard() {
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text("Month Completed", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text("All entries for September are locked.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Monthly Record", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Reviewing data for $monthName.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             // Decorative Blur Blob (Simplified as Circle)
@@ -368,8 +347,8 @@ fun RateInput(label: String, value: String, onValueChange: (String) -> Unit, mod
 
 @Composable
 fun BreakdownCard(
-    totalMeals: Int, mealRate: Double, mealCost: Double,
-    totalTeas: Int, teaRate: Double, teaCost: Double
+    totalMeals: Double, mealRate: Double, mealCost: Double,
+    totalTeas: Double, teaRate: Double, teaCost: Double
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -391,7 +370,7 @@ fun BreakdownCard(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("Total Meals", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$totalMeals count × PKR ${mealRate.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                        Text("${totalMeals.toString().removeSuffix(".0")} count × PKR ${mealRate.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                     }
                 }
                 Text("PKR ${mealCost.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -411,8 +390,8 @@ fun BreakdownCard(
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text("Total Tea", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("$totalTeas count × PKR ${teaRate.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                        Text("Total Tea", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onBackground)
+                        Text("${totalTeas.toString().removeSuffix(".0")} count × PKR ${teaRate.toInt()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                     }
                 }
                 Text("PKR ${teaCost.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)

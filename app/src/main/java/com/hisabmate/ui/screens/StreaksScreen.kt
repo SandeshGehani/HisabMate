@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -369,13 +371,34 @@ fun MonthlyBadgesSection(badges: List<com.hisabmate.data.local.entities.MonthlyS
                 BadgeCard(title = "Complete Month", subtitle = "Locked", icon = Icons.Default.Lock, color = Color.Gray, isLocked = true)
                 BadgeCard(title = "Perfect Streak", subtitle = "Locked", icon = Icons.Default.Lock, color = Color.Gray, isLocked = true)
             } else {
+                // Show placeholders for missing common badges if they aren't earned yet
+                val earnedTypes = badges.map { it.badgeEarned }.toSet()
+                
+                if (!earnedTypes.contains("MEAL_KING")) {
+                    BadgeCard(title = "Meal King", subtitle = "60+ Meals", icon = Icons.Default.Restaurant, color = Color.Gray, isLocked = true)
+                }
+                if (!earnedTypes.contains("TEA_MASTER")) {
+                    BadgeCard(title = "Tea Master", subtitle = "100+ Teas", icon = Icons.Default.LocalCafe, color = Color.Gray, isLocked = true)
+                }
+                if (!earnedTypes.contains("SAVER")) {
+                    BadgeCard(title = "Smart Saver", subtitle = "<5k Total", icon = Icons.Default.Savings, color = Color.Gray, isLocked = true)
+                }
+
                 badges.forEach { summary ->
                     val monthName = java.time.Month.of(summary.month).name.lowercase().replaceFirstChar { it.uppercase() }
+                    
+                    val (title, icon, color) = when(summary.badgeEarned) {
+                        "MEAL_KING" -> Triple("Meal King", Icons.Default.Restaurant, Orange500)
+                        "TEA_MASTER" -> Triple("Tea Master", Icons.Default.LocalCafe, Purple500)
+                        "SAVER" -> Triple("Smart Saver", Icons.Default.Savings, Color(0xFF10B981))
+                        else -> Triple("Consistency", Icons.Default.Verified, Blue500)
+                    }
+
                     BadgeCard(
-                        title = "Complete Month", 
+                        title = title,
                         subtitle = "$monthName ${summary.year}", 
-                        icon = Icons.Default.Verified, 
-                        color = Orange500
+                        icon = icon, 
+                        color = color
                     )
                 }
             }
